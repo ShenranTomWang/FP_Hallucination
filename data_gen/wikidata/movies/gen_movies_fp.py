@@ -16,7 +16,7 @@ if __name__ == '__main__':
         item['time_fp'] = [random.choice(list(available_choices))]
         item['time'] = list(item['time'])
     
-    result_file = 'dataset/toy_dataset/movies/wikidata_movies_fp.json'
+    result_file = 'dataset/toy_dataset/movies/wikidata_movies.json'
     os.makedirs(os.path.dirname(result_file), exist_ok=True)
     with open(result_file, 'w') as f:
         for item in data:
