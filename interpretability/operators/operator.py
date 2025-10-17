@@ -73,7 +73,19 @@ class Operator(ABC):
     def generate(self, text: str, **kwargs) -> torch.Tensor:
         tokenized = self.tokenizer(text, return_tensors="pt").to(self.device)
         output = self.model.generate(**tokenized, **kwargs)
+        output = self.tokenizer.decode(output[0], skip_special_tokens=True)
         return output
+    
+    @abstractmethod
+    def apply_chat_template(self, messages: list[dict]) -> str:
+        """
+        Apply chat template to the input text
+        Args:
+            messages (list[dict]): list of messages with 'role' and 'content'
+        Returns:
+            str: formatted chat input
+        """
+        return self.tokenizer.apply_chat_template(messages)
 
     def get_attention_mean(self, attn: AttentionManager, **kwargs) -> AttentionManager:
         """

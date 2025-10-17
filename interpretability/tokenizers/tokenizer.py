@@ -26,3 +26,14 @@ class Tokenizer(ABC):
     
     def decode(self, input_ids: list[int]):
         return self.tokenizer.decode(input_ids)
+    
+    def apply_chat_template(self, messages: list[dict]) -> str:
+        """
+        Apply chat template to convert messages into a single string input.
+        
+        Args:
+            messages: list of dicts with 'role' and 'content' keys
+        Returns:
+            str
+        """
+        return self.tokenizer.apply_chat_template(messages)

@@ -4,7 +4,7 @@ load_dotenv()
 import requests
 import time
 from tqdm import tqdm
-import json
+import json, random
 from dateutil import parser
 
 def run_sparql(sparql_query):
@@ -93,6 +93,24 @@ if __name__ == '__main__':
             "info": triple,
         }
 
+    with open(result_file, 'r') as f:
+        data = [json.loads(line) for line in f.readlines()]
+    unique_years = set()
+    for item in data:
+        years = item['time']
+        years_set = set(years)
+        item['time'] = years_set
+        unique_years.update(years_set)
+    
+    for item in data:
+        available_choices = unique_years - item['time']
+        item['time_fp'] = [random.choice(list(available_choices))]
+        item['time'] = list(item['time'])
+    
+    os.makedirs(os.path.dirname(result_file), exist_ok=True)
+    with open(result_file, 'w') as f:
+        for item in data:
+            f.write(json.dumps(item) + '\n')
 
     print("Finished Running!")
 
