@@ -2,6 +2,7 @@ import os, json, argparse
 import interpretability
 import torch
 from .data_loader import DataLoader
+from tqdm import tqdm
 
 def main(args):
     operator: interpretability.operators.Operator = args.operator(path=args.model_name_or_path, device=args.device, dtype=args.dtype)
@@ -9,11 +10,15 @@ def main(args):
     dataset = data_loader.load_data()
     dataset_name = os.path.dirname(args.dataset_path).split('/')[-1]
     template = data_loader.get_templates(dataset_name, 'KNOWLEDGE_TEST_TEMPLATES')[0]
-    for data in dataset:
+    n_correct = 0
+    for data in tqdm(dataset, desc='Processing dataset'):
         question = template(**data)
         generation = operator.generate(question)
         correct = data[data_loader.get_correct_key()]
         data['model_knows'] = correct in generation
+        if data['model_knows']:
+            n_correct += 1
+    print(f"Model knows {n_correct} out of {len(dataset)} facts. Accuracy: {n_correct / len(dataset):.4f}")
     with open(args.dataset_path, 'w') as f:
         for data in dataset:
             f.write(json.dumps(data) + '\n')
