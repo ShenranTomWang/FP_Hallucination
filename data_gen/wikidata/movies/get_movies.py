@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 import os
 load_dotenv()
-from qwikidata.sparql import return_sparql_query_results
 import requests
 import time
+from tqdm import tqdm
+import json
+from dateutil import parser
 
 def run_sparql(sparql_query):
 
@@ -58,12 +60,7 @@ def query_movie_publication(limit_num,offset=0):
 
 
 if __name__ == '__main__':
-    from tqdm import tqdm
-    import json
-    from random import shuffle
-    from dateutil import parser
-
-    result_file = 'dataset/ToyDataset/Movies/wikidata_movies.json'
+    result_file = 'dataset/toy_dataset/movies/wikidata_movies.json'
 
     r = 'P577'
     relation_title = 'publication_date'

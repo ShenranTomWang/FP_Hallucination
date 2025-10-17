@@ -123,7 +123,7 @@ if __name__ == '__main__':
     import json
     from random import shuffle
 
-    result_file = 'dataset/ToyDataset/Books/book_author.json'
+    result_file = 'dataset/toy_dataset/books/book_author.json'
 
     r = 'P50'
     relation_title = 'author'

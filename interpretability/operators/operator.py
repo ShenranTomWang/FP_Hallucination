@@ -69,7 +69,12 @@ class Operator(ABC):
         tokenized = self.tokenizer(text, return_tensors="pt").to(self.device)
         output = self.model(**tokenized, **kwargs)
         return output
-    
+
+    def generate(self, text: str, **kwargs) -> torch.Tensor:
+        tokenized = self.tokenizer(text, return_tensors="pt").to(self.device)
+        output = self.model.generate(**tokenized, **kwargs)
+        return output
+
     def get_attention_mean(self, attn: AttentionManager, **kwargs) -> AttentionManager:
         """
         Get mean attention values along sequence dimension
