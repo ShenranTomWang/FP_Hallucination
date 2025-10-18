@@ -19,7 +19,9 @@ def main(args):
         if data['model_knows']:
             n_correct += 1
     print(f"Model knows {n_correct} out of {len(dataset)} facts. Accuracy: {n_correct / len(dataset):.4f}")
-    with open(args.dataset_path, 'w') as f:
+    save_path = os.path.dirname(args.dataset_path)
+    save_path = os.path.join(save_path, f"{args.model_name_or_path.split('/')[-1]}_curated.jsonl")
+    with open(save_path, 'w') as f:
         for data in dataset:
             f.write(json.dumps(data) + '\n')
 

@@ -60,7 +60,7 @@ def query_movie_publication(limit_num,offset=0):
 
 
 if __name__ == '__main__':
-    result_file = 'dataset/toy_dataset/movies/wikidata_movies.json'
+    result_file = 'dataset/toy_dataset/movies/wikidata_movies.jsonl'
 
     r = 'P577'
     relation_title = 'publication_date'
