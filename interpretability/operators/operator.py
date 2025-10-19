@@ -76,7 +76,6 @@ class Operator(ABC):
         output = self.tokenizer.decode(output[0], skip_special_tokens=True)
         return output
     
-    @abstractmethod
     def apply_chat_template(self, messages: list[dict]) -> str:
         """
         Apply chat template to the input text
