@@ -10,6 +10,9 @@
 source /home/shenranw/.bashrc
 source /home/shenranw/scratch/envs/llm/bin/activate
 
+export HF_HOME=/home/shenranw/scratch/tmp/transformers_cache
+export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
+
 cd /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/
 python -m data_gen.curate_model_dataset \
     --dataset_path /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/data/toy_datasets/movies/wikidata_movies.jsonl \
