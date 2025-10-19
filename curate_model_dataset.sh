@@ -13,5 +13,5 @@ source /home/shenranw/scratch/envs/llm/bin/activate
 cd /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/
 python -m data_gen.curate_model_dataset \
     --dataset_path /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/data/toy_datasets/movies/wikidata_movies.jsonl \
-    --model_name_or_path Qwen/Qwen2.5-1.5B-Instruct \
-    --operator Qwen2Operator \
+    --model_name_or_path /home/shenranw/scratch/tmp/transformers_cache/hub/models--Qwen--Qwen2.5-1.5B-Instruct \
+    --operator Qwen2Operator
