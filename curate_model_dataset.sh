@@ -16,5 +16,5 @@ export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
 cd /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/
 python -m data_gen.curate_model_dataset \
     --dataset_path /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/data/toy_datasets/movies/wikidata_movies.jsonl \
-    --model_name_or_path /home/shenranw/scratch/tmp/transformers_cache/hub/models--Qwen--Qwen2.5-1.5B-Instruct \
+    --model_name_or_path /home/shenranw/scratch/models/Qwen2.5-1.5B-Instruct \
     --operator Qwen2Operator
