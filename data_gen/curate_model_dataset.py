@@ -6,10 +6,10 @@ from tqdm import tqdm
 
 def main(args):
     operator: interpretability.operators.Operator = args.operator(path=args.model_name_or_path, device=args.device, dtype=args.dtype)
-    data_loader = DataLoader(dataset_name='movies', file_path=args.dataset_path)
-    dataset = data_loader.load_data()
     dataset_name = os.path.dirname(args.dataset_path).split('/')[-1]
-    template = data_loader.get_templates(dataset_name, 'KNOWLEDGE_TEST_TEMPLATES')[0]
+    data_loader = DataLoader(dataset_name=dataset_name, file_path=args.dataset_path)
+    dataset = data_loader.load_data()
+    template = data_loader.get_templates('KNOWLEDGE_TEST_TEMPLATES')[0]
     n_correct = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         question = template(**data)
