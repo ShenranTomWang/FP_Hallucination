@@ -21,7 +21,8 @@ def main(args):
     for data in tqdm(dataset, desc='Processing dataset'):
         question = data_loader.get_question(data, template=template)
         messages = [sys_message, {"role": "user", "content": question}]
-        inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
+        inputs = tokenizer.apply_chat_template(messages, return_tensors='pt')
+        inputs = {k: v.to(args.device) for k, v in inputs.items()}
         with torch.no_grad():
             outputs = model.generate(**inputs, max_new_tokens=512)
         generation = tokenizer.decode(outputs[0], skip_special_tokens=True)
