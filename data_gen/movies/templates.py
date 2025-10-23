@@ -1,13 +1,9 @@
-from abc import ABC, abstractmethod
+from ..template import Template
 
-class FPMovieTemplate(ABC):
+class FPMovieTemplate(Template):
     def __init__(self, movie: str, time_fp: str, **kwargs):
         self.movie = movie
         self.time_fp = time_fp
-
-    @abstractmethod
-    def generate(self):
-        pass
 
 class FPMovieTemplate1(FPMovieTemplate):
     def generate(self):

@@ -14,4 +14,4 @@ path = snapshot_download(
     local_dir_use_symlinks=False,
     revision='main'
 )
-print(path)  # absolute path to the saved file
+print(path)
