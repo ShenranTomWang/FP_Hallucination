@@ -14,7 +14,7 @@ source /home/shenranw/scratch/envs/llm/bin/activate
 export HF_HOME=/home/shenranw/scratch/tmp/transformers_cache
 export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
 
-cd /home/shenranw/projects/def-vshwartz/shenranw/FP_Hallucination/
-python -m data_gen.run_model \
+cd /home/shenranw/FP_Hallucination
+python run_model.py \
     --dataset CREPE \
     --model_name_or_path /home/shenranw/scratch/models/Qwen2.5-1.5B-Instruct
