@@ -16,13 +16,11 @@ def main(args):
     dataset = data_loader.load_data()
     if hasattr(data_loader, 'get_templates'):
         template = data_loader.get_templates('KNOWLEDGE_TEST_TEMPLATES')[0]
-    messages = [
-        {"role": "system", "content": "You are a knowledgeable assistant that answers questions based on your knowledge."}
-    ]
+    sys_message = {"role": "system", "content": "You are a knowledgeable assistant that answers questions based on your knowledge."}
     
     for data in tqdm(dataset, desc='Processing dataset'):
         question = data_loader.get_question(data, template=template)
-        messages.append({"role": "user", "content": question})
+        messages = [sys_message, {"role": "user", "content": question}]
         inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
         with torch.no_grad():
             outputs = model.generate(**inputs, max_new_tokens=512)
