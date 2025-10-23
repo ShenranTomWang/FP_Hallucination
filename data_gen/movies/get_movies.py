@@ -6,6 +6,7 @@ import time
 from tqdm import tqdm
 import json, random
 from dateutil import parser
+import argparse
 
 def run_sparql(sparql_query):
 
@@ -60,7 +61,12 @@ def query_movie_publication(limit_num,offset=0):
 
 
 if __name__ == '__main__':
-    result_file = 'dataset/toy_dataset/movies/wikidata_movies.jsonl'
+    parser = argparse.ArgumentParser(description='Query movie publication data from Wikidata')
+    parser.add_argument('--data_dir', type=str, default='dataset', help='Path to the result file')
+    args = parser.parse_args()
+
+    result_file = os.path.join(args.data_dir, 'movies', 'wikidata_movies.jsonl')
+    os.makedirs(os.path.dirname(result_file), exist_ok=True)
 
     r = 'P577'
     relation_title = 'publication_date'
