@@ -20,7 +20,6 @@ def main(args):
         {"role": "system", "content": "You are a knowledgeable assistant that answers questions based on your knowledge."}
     ]
     
-    n_correct = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         question = data_loader.get_question(data, template=template)
         messages.append({"role": "user", "content": question})
@@ -29,8 +28,7 @@ def main(args):
             outputs = model.generate(**inputs, max_new_tokens=512)
         generation = tokenizer.decode(outputs[0], skip_special_tokens=True)
         data['model_answer'] = generation
-        breakpoint()
-    print(f"Model knows {n_correct} out of {len(dataset)} facts. Accuracy: {n_correct / len(dataset):.4f}")
+    
     with open(args.out_file, 'w') as f:
         for data in dataset:
             f.write(json.dumps(data) + '\n')
