@@ -11,8 +11,7 @@ def main(args):
         device_map='auto' if args.device.type == 'cuda' else None,
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
-    dataset_name = os.path.dirname(args.dataset_path).split('/')[-1]
-    data_loader = instantiate_dataloader(dataset_name=dataset_name, file_dir=args.dataset_path)
+    data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
     dataset = data_loader.load_data()
     if hasattr(data_loader, 'get_templates'):
         template = data_loader.get_templates('KNOWLEDGE_TEST_TEMPLATES')[0]
@@ -34,7 +33,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, create a dataset with labels indicating whether the model knows each fact.')
-    parser.add_argument('--dataset_path', type=str, required=True, help='Path to the dataset file (JSONL format)')
+    parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     parser.add_argument('--model_name_or_path', type=str, required=True, help='Model name or path for loading from transformers')
     parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     parser.add_argument('--device', type=str, default='cpu' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
