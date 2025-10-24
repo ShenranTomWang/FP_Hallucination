@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 datasetname2loader = {
     'movies': 'WikidataLoader',
-    'CREPE': 'DataLoader'
+    'CREPE': 'CREPELoader'
 }
 
 def instantiate_dataloader(dataset_name: str, file_dir: str = 'dataset'):
