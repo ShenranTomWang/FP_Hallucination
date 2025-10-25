@@ -6,6 +6,10 @@
 #SBATCH --time=2-00:00:00
 #SBATCH --account=st-hgonen-1-gpu
 #SBATCH --constraint=gpu_mem_32
+#SBATCH --output=run_model.log
+#SBATCH --error=run_model.log
+#SBATCH --mail-user=shenranw@student.ubc.ca
+#SBATCH --mail-type=ALL
 #SBATCH --job-name=run_model
 
 source /home/shenranw/.bashrc
