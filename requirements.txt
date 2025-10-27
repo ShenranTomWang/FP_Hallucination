@@ -4,7 +4,6 @@ aiosignal
 annotated_types
 anyio
 attrs
-baukit
 certifi
 charset_normalizer
 contourpy
@@ -35,7 +34,6 @@ langchain_community
 langchain_core
 langchain_text_splitters
 langsmith
-mamba_ssm
 MarkupSafe
 marshmallow
 matplotlib
@@ -68,7 +66,6 @@ safetensors
 scikit_learn
 scipy
 seaborn
-shutup
 six
 sniffio
 SQLAlchemy
