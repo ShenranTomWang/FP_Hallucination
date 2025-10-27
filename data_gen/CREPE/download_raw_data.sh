@@ -2,13 +2,15 @@
 
 
 RESET_OPT=0
-while getopts ":s:" opt; do
+while getopts ":s:d:" opt; do
     case ${opt} in
         s ) SPLIT=$OPTARG;;
         d ) DATA_DIR=$OPTARG;;
     esac
 done
 
+echo "Downloading CREPE dataset to $DATA_DIR"
+mkdir -p $DATA_DIR
 mkdir -p $DATA_DIR/CREPE;
 if [ -z $SPLIT ]; then # download labeled data only
   wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1mGzc1xmz7mHf90sI8zns0XZvNwHoHRBg' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1mGzc1xmz7mHf90sI8zns0XZvNwHoHRBg" -O $DATA_DIR/CREPE_data.zip && rm -rf /tmp/cookies.txt ;
