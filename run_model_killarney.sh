@@ -3,7 +3,7 @@
 #SBATCH --gpus=l40s:1
 #SBATCH --ntasks=4
 #SBATCH --mem=24G
-#SBATCH --time=2-00:00:00
+#SBATCH --time=6:00:00
 #SBATCH --account=aip-vshwartz
 #SBATCH --job-name=run_model
 
