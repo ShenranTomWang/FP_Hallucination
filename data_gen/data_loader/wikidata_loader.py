@@ -1,5 +1,6 @@
 import importlib
 from ..template import Template
+from typing import Type
 
 class WikidataLoader:
     datasetname2correct_key = {
@@ -24,5 +25,5 @@ class WikidataLoader:
     def get_fp_key(self) -> str:
         return self.datasetname2fp_key.get(self.dataset_name)
     
-    def get_question(self, dp: dict, template: Template, **kwargs) -> str:
+    def get_question(self, dp: dict, template: Type[Template], **kwargs) -> str:
         return template(**dp).generate()

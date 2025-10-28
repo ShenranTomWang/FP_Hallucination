@@ -15,15 +15,18 @@ def main(args):
     data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
     dataset = data_loader.load_data(split=args.split)
     dataset = dataset[args.start_idx:]
-    few_shot_data = data_loader.load_data(split='train')
-    few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
-    few_shot_data = random.sample(few_shot_data, args.k)
+    if dataset[0].get('few_shot_data') is None:
+        few_shot_data = data_loader.load_data(split='train')
+        few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
+        few_shot_data = random.sample(few_shot_data, args.k)
+        for data in dataset:
+            data['few_shot_data'] = few_shot_data
+        data_loader.save_data(dataset, split=args.split)
     count = 0
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
     for data in tqdm(dataset, desc='Processing dataset'):
-        template = PresuppositionExtractionTemplate(few_shot_data=few_shot_data, **data)
-        messages = data_loader.get_question(data, template=template)
+        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate)
         inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
         with torch.no_grad():
             outputs = model.generate(inputs, max_new_tokens=512)

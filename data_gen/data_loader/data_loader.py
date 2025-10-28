@@ -44,4 +44,8 @@ class DataLoader(ABC):
     @abstractmethod
     def get_question(self, dp: dict, **kwargs) -> str:
         pass
+    
+    @abstractmethod
+    def save_data(self, data: list[dict], out_path: str = None, **kwargs):
+        pass
         
