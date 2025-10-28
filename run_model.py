@@ -28,7 +28,7 @@ def main(args):
         data['model_answer'] = generation
         with open(args.out_file, 'a') as f:
             f.write(json.dumps(data) + '\n')
-        count += 1``
+        count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
 
 if __name__ == '__main__':
