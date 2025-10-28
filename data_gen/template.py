@@ -5,24 +5,36 @@ class Template(ABC):
     def generate(self):
         pass
 
-class PresuppositionExtractionTemplate(Template):
-    def __init__(self, question: str, **kwargs):
+class FewShotExample(Template):
+    def __init__(self, question: str, presuppositions: list, **kwargs):
         self.question = question
+        self.presuppositions = presuppositions
 
     def generate(self):
+        content = f"""
+            Question: {self.question}
+            Presuppositions:
+                
+        """
+        for i, p in enumerate(self.presuppositions, 1):
+            content += f"    ({i}) {p}\n"
+        return content
+        
+class PresuppositionExtractionTemplate(Template):
+    def __init__(self, question: str, few_shot_data: list, **kwargs):
+        self.question = question
+        self.few_shot_data = [FewShotExample(**dp) for dp in few_shot_data]
+
+    def generate(self):
+        few_shot_content = "\n".join([dp.generate() for dp in self.few_shot_data])
         messages = [
             {
                 "role": "system",
-                "content": """
-                    You are a helpful assistant that analyzes the following question. \
-                    Your task is to extract assumptions implicit in a given question. \
+                "content": f"""
+                    You are a helpful assistant that analyzes the following question.
+                    Your task is to extract assumptions implicit in a given question.
                     You must notice that considering the intention of the question will be helpful to extract a hidden assumption of the given question.
-                    e.g. Question : When did the great depression began before world war 1?
-                        Presuppositions :
-                        (1) There was a period called the Great Depression.
-                        (2) There was a conflict called World War 1.
-                        (3) The Great Depression began before World War 1.
-                    There is a clear and single answer to the question.
+                    {few_shot_content}
                 """},
             {"role": "user", "content": self.question}
         ]

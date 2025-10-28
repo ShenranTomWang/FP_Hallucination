@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import json, argparse, os
+import json, argparse, os, random
 import torch
 from data_gen.data_loader import instantiate_dataloader
 from tqdm import tqdm
@@ -15,11 +15,14 @@ def main(args):
     data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
     dataset = data_loader.load_data(split=args.split)
     dataset = dataset[args.start_idx:]
+    few_shot_data = data_loader.load_data(split='train')
+    few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
+    few_shot_data = random.sample(few_shot_data, args.k)
     count = 0
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
     for data in tqdm(dataset, desc='Processing dataset'):
-        template = PresuppositionExtractionTemplate(**data)
+        template = PresuppositionExtractionTemplate(few_shot_data=few_shot_data, **data)
         messages = data_loader.get_question(data, template=template)
         inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
         with torch.no_grad():
@@ -35,6 +38,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, generate responses using FP extraction prompt templates, store to output file.')
     parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
     parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
