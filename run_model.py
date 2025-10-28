@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import json, argparse
+import json, argparse, os
 import torch
 from data_gen.data_loader import instantiate_dataloader
 from tqdm import tqdm
@@ -16,6 +16,7 @@ def main(args):
     dataset = data_loader.load_data(split=args.split)
     dataset = dataset[args.start_idx:]
     count = 0
+    os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
     for data in tqdm(dataset, desc='Processing dataset'):
         template = PresuppositionExtractionTemplate(**data)
