@@ -5,7 +5,7 @@ import json
 
 class CREPELoader(DataLoader):
     def get_question(self, dp: dict, template: Type[Template], **kwargs) -> str:
-        return template(**dp).generate()
+        return template(**dp).generate(**kwargs)
     
     def save_data(self, data: list[dict], split: str, out_path: str = None):
         if out_path is None:

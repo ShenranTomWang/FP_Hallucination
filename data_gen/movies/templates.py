@@ -6,33 +6,33 @@ class FPMovieTemplate(Template):
         self.time_fp = time_fp
 
 class FPMovieTemplate1(FPMovieTemplate):
-    def generate(self):
+    def generate(self, system_role: str = "system", **kwargs):
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that answer user's queries."},
+            {"role": system_role, "content": "You are a helpful assistant that answer user's queries."},
             {"role": "user", "content": f"Why was the film {self.movie} released in {self.time_fp}?"}
         ]
         return messages
 
 class FPMovieTemplate2(FPMovieTemplate):
-    def generate(self):
+    def generate(self, system_role: str = "system", **kwargs):
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that answer user's queries."},
-            {"role": "user", "content": f"What was the film {self.movie} released in {self.time_fp} describing?"} 
+            {"role": system_role, "content": "You are a helpful assistant that answer user's queries."},
+            {"role": "user", "content": f"What was the film {self.movie} released in {self.time_fp} describing?"}
         ]
         return messages
 
 class FPMovieTemplate3(FPMovieTemplate):
-    def generate(self):
+    def generate(self, system_role: str = "system", **kwargs):
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that answer user's queries."},
+            {"role": system_role, "content": "You are a helpful assistant that answer user's queries."},
             {"role": "user", "content": f"What was the {self.time_fp} film {self.movie} about?"}
         ]
         return messages
 
 class FPMovieTemplate4(FPMovieTemplate):
-    def generate(self):
+    def generate(self, system_role: str = "system", **kwargs):
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that answer user's queries."},
+            {"role": system_role, "content": "You are a helpful assistant that answer user's queries."},
             {"role": "user", "content": f"Who are the main characters in the {self.time_fp} film {self.movie}?"}
         ]
         return messages
@@ -41,8 +41,12 @@ class KnowledgeTestMovieTemplate:
     def __init__(self, movie: str, **kwargs):
         self.movie = movie
 
-    def generate(self):
-        return f"Which year was the movie {self.movie} released?"
+    def generate(self, system_role: str = "system", **kwargs):
+        messages = [
+            {"role": system_role, "content": "You are a helpful assistant that answer user's queries."},
+            {"role": "user", "content": f"Which year was the movie {self.movie} released?"}
+        ]
+        return messages
 
 FP_TEMPLATES = [
     FPMovieTemplate1,

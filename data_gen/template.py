@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class Template(ABC):
     @abstractmethod
-    def generate(self):
+    def generate(self, **kwargs):
         pass
 
 class FewShotExample(Template):
@@ -10,7 +10,7 @@ class FewShotExample(Template):
         self.question = question
         self.presuppositions = presuppositions
 
-    def generate(self):
+    def generate(self, **kwargs):
         content = f"""
             Question: {self.question}
             Presuppositions:
@@ -25,11 +25,11 @@ class PresuppositionExtractionTemplate(Template):
         self.question = question
         self.few_shot_data = [FewShotExample(**dp) for dp in few_shot_data]
 
-    def generate(self):
+    def generate(self, system_role: str = "system", **kwargs):
         few_shot_content = "\n".join([dp.generate() for dp in self.few_shot_data])
         messages = [
             {
-                "role": "system",
+                "role": system_role,
                 "content": f"""
                     You are a helpful assistant that analyzes the following question.
                     Your task is to extract assumptions implicit in a given question.

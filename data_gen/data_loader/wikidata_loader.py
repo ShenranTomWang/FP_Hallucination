@@ -26,4 +26,4 @@ class WikidataLoader:
         return self.datasetname2fp_key.get(self.dataset_name)
     
     def get_question(self, dp: dict, template: Type[Template], **kwargs) -> str:
-        return template(**dp).generate()
+        return template(**dp).generate(**kwargs)

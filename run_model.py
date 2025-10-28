@@ -26,7 +26,7 @@ def main(args):
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
     for data in tqdm(dataset, desc='Processing dataset'):
-        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate)
+        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
         inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
         with torch.no_grad():
             outputs = model.generate(inputs, max_new_tokens=512)
@@ -41,14 +41,22 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, generate responses using FP extraction prompt templates, store to output file.')
     parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
     parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
     parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
-    parser.add_argument('--model_name_or_path', type=str, required=True, help='Model name or path for loading from transformers')
     parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     parser.add_argument('--device', type=str, default='cpu' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
     parser.add_argument('--dtype', type=str, default='bfloat16', help='Data type for model parameters')
+    model_subparsers = parser.add_subparsers(title='model_subcommands', dest='model_subcommand')
+    
+    transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')
+    transformers_parser.add_argument('--model_name_or_path', type=str, required=True, help='Model name or path for loading from transformers')
+    
+    openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
+    openai_parser.add_argument('--model_name_or_path', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
+    
     args = parser.parse_args()
     args.dtype = getattr(torch, args.dtype)
     args.device = torch.device(args.device)
