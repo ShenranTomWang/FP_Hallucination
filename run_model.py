@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import json, argparse, os, random
+import json, argparse, os, random, time
 import torch
 import openai
 from data_gen.data_loader import instantiate_dataloader, DataLoader
@@ -45,24 +45,24 @@ def run_transformers_model(args, dataset: list, data_loader: DataLoader):
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
 
-def run_openai_model_batched(args, dataset: list, data_loader: DataLoader):
-    for i, data in tqdm(enumerate(dataset), desc='Processing dataset'):
+def run_openai_model_batched(args, client: openai.Client, dataset: list, data_loader: DataLoader):
+    all_messages = []
+    for data in tqdm(dataset, desc='Processing dataset'):
         os.makedirs('tmp', exist_ok=True)
         messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
-            with open('tmp/temp_messages.jsonl', 'a') as f:
-                task = {
-                    "custom_id": f"{i}",
-                    "method": "POST",
-                    "url": "/v1/chat/completions",
-                    "body": {
-                        "model": args.model,
-                        "response_format": {
-                            "type": "json_object"
-                        },
-                        "messages": messages,
-                    }
+        all_messages.append(messages)
+    with open('tmp/temp_messages.jsonl', 'w') as f:
+        for i, messages in enumerate(all_messages):
+            task = {
+                "custom_id": f"{i}",
+                "method": "POST",
+                "url": "/v1/chat/completions",
+                "body": {
+                    "model": args.model,
+                    "messages": messages
                 }
-                f.write(json.dumps(task) + '\n')
+            }
+            f.write(json.dumps(task) + '\n')
     batch_file = client.files.create(
         file=open('tmp/temp_messages.jsonl', "rb"),
         purpose="batch"
@@ -74,10 +74,15 @@ def run_openai_model_batched(args, dataset: list, data_loader: DataLoader):
     )
     completed = False
     while not completed:
+        time.sleep(10)
         batch_job = client.batches.retrieve(batch_job.id)
+        print(f'Batch job status: {batch_job.status}')
+        if batch_job.status in ['failed', 'canceled', 'expired']:
+            raise RuntimeError(f'Batch job failed with status: {batch_job.status}')
         completed = batch_job.status == 'completed'
-    result_file_id = batch_job.output_file_id
-    result = client.files.content(result_file_id).content
+    time.sleep(5)
+    breakpoint()
+    result = client.files.content(batch_job.output_file_id).content
     result_file_name = "tmp/openai_results_{}.jsonl".format(args.dataset)
     with open(result_file_name, 'wb') as f:
         f.write(result)
@@ -88,9 +93,9 @@ def run_openai_model_batched(args, dataset: list, data_loader: DataLoader):
         dataset[i]['model_answer'] = res['response']['body']['choices'][0]['message']['content']
     with open(args.out_file, 'w') as f:
         for data in dataset:
-            f.write(json.dumps(dataset) + '\n')
+            f.write(json.dumps(data) + '\n')
 
-def run_openai_model_one_by_one(args, dataset: list, data_loader: DataLoader):
+def run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data_loader: DataLoader):
     for i, data in tqdm(enumerate(dataset), desc='Processing dataset'):
         messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
         response = client.chat.completions.create(
@@ -105,13 +110,12 @@ def run_openai_model_one_by_one(args, dataset: list, data_loader: DataLoader):
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
 
 def run_openai_model(args, dataset: list, data_loader: DataLoader):
-    openai.api_key = os.getenv("OPENAI_API_KEY")
     client = openai.Client()
     count = 0
     if args.batched_job:
-        run_openai_model_batched(args, dataset, data_loader)
+        run_openai_model_batched(args, client, dataset, data_loader)
     else:
-        run_openai_model_one_by_one(args, dataset, data_loader)
+        run_openai_model_one_by_one(args, client, dataset, data_loader)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, generate responses using FP extraction prompt templates, store to output file.')
@@ -132,7 +136,6 @@ if __name__ == '__main__':
     openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
-    openai_parser.add_argument('--api_key', required=True, type=str, help='OpenAI API key')
     openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
     
     args = parser.parse_args()
