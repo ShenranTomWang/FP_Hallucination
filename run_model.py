@@ -1,17 +1,12 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import json, argparse, os, random
 import torch
-from data_gen.data_loader import instantiate_dataloader
+import openai
+from data_gen.data_loader import instantiate_dataloader, DataLoader
 from tqdm import tqdm
 from data_gen.template import PresuppositionExtractionTemplate
 
 def main(args):
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_name_or_path,
-        torch_dtype=args.dtype,
-        device_map=args.device
-    )
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
     data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
     dataset = data_loader.load_data(split=args.split)
     dataset = dataset[args.start_idx:]
@@ -22,9 +17,21 @@ def main(args):
         for data in dataset:
             data['few_shot_data'] = few_shot_data
         data_loader.save_data(dataset, split=args.split)
-    count = 0
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
+    if args.model_subcommand == 'transformers':
+        run_transformers_model(args, dataset, data_loader)
+    elif args.model_subcommand == 'openai':
+        run_openai_model(args, dataset, data_loader)
+
+def run_transformers_model(args, dataset: list, data_loader: DataLoader):
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        torch_dtype=args.dtype,
+        device_map=args.device
+    )
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
         inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
@@ -38,10 +45,77 @@ def main(args):
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
 
+def run_openai_model_batched(args, dataset: list, data_loader: DataLoader):
+    for i, data in tqdm(enumerate(dataset), desc='Processing dataset'):
+        os.makedirs('tmp', exist_ok=True)
+        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
+            with open('tmp/temp_messages.jsonl', 'a') as f:
+                task = {
+                    "custom_id": f"{i}",
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": args.model,
+                        "response_format": {
+                            "type": "json_object"
+                        },
+                        "messages": messages,
+                    }
+                }
+                f.write(json.dumps(task) + '\n')
+    batch_file = client.files.create(
+        file=open('tmp/temp_messages.jsonl', "rb"),
+        purpose="batch"
+    )
+    batch_job = client.batches.create(
+        input_file_id=batch_file.id,
+        endpoint="/v1/chat/completions",
+        completion_window="24h"
+    )
+    completed = False
+    while not completed:
+        batch_job = client.batches.retrieve(batch_job.id)
+        completed = batch_job.status == 'completed'
+    result_file_id = batch_job.output_file_id
+    result = client.files.content(result_file_id).content
+    result_file_name = "tmp/openai_results_{}.jsonl".format(args.dataset)
+    with open(result_file_name, 'wb') as f:
+        f.write(result)
+    with open(result_file_name, 'r') as f:
+        results = [json.loads(line.strip()) for line in f]
+    for res in tqdm(results, desc='Organizing responses'):
+        i = int(res['custom_id'])
+        dataset[i]['model_answer'] = res['response']['body']['choices'][0]['message']['content']
+    with open(args.out_file, 'w') as f:
+        for data in dataset:
+            f.write(json.dumps(dataset) + '\n')
+
+def run_openai_model_one_by_one(args, dataset: list, data_loader: DataLoader):
+    for i, data in tqdm(enumerate(dataset), desc='Processing dataset'):
+        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
+        response = client.chat.completions.create(
+            model=args.model,
+            messages=messages
+        )
+        generation = response.choices[0].message.content
+        data['model_answer'] = generation
+        with open(args.out_file, 'a') as f:
+            f.write(json.dumps(data) + '\n')
+        count += 1
+        print(f'Progress: {count}/{len(dataset) + args.start_idx}')
+
+def run_openai_model(args, dataset: list, data_loader: DataLoader):
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    client = openai.Client()
+    count = 0
+    if args.batched_job:
+        run_openai_model_batched(args, dataset, data_loader)
+    else:
+        run_openai_model_one_by_one(args, dataset, data_loader)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, generate responses using FP extraction prompt templates, store to output file.')
     parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
-    parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
     parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
     parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
@@ -52,14 +126,18 @@ if __name__ == '__main__':
     model_subparsers = parser.add_subparsers(title='model_subcommands', dest='model_subcommand')
     
     transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')
-    transformers_parser.add_argument('--model_name_or_path', type=str, required=True, help='Model name or path for loading from transformers')
+    transformers_parser.add_argument('--model', type=str, required=True, help='Model name or path for loading from transformers')
+    transformers_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
     
     openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
-    openai_parser.add_argument('--model_name_or_path', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
+    openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
+    openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
+    openai_parser.add_argument('--api_key', required=True, type=str, help='OpenAI API key')
+    openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
     
     args = parser.parse_args()
     args.dtype = getattr(torch, args.dtype)
     args.device = torch.device(args.device)
-    args.out_file = args.out_file.format(args.model_name_or_path.split('/')[-1])
+    args.out_file = args.out_file.format(args.model.split('/')[-1])
 
     main(args)

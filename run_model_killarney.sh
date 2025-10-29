@@ -15,4 +15,4 @@ export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
 cd /home/shenranw/projects/aip-vshwartz/shenranw/FP_Hallucination
 python run_model.py \
     --dataset CREPE \
-    --model_name_or_path /home/shenranw/scratch/models/Qwen2.5-1.5B-Instruct
+    --model /home/shenranw/scratch/models/Qwen2.5-1.5B-Instruct
