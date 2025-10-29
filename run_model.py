@@ -81,7 +81,6 @@ def run_openai_model_batched(args, client: openai.Client, dataset: list, data_lo
             raise RuntimeError(f'Batch job failed with status: {batch_job.status}')
         completed = batch_job.status == 'completed'
     time.sleep(5)
-    breakpoint()
     result = client.files.content(batch_job.output_file_id).content
     result_file_name = "tmp/openai_results_{}.jsonl".format(args.dataset)
     with open(result_file_name, 'wb') as f:
