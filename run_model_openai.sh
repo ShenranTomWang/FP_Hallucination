@@ -15,5 +15,7 @@ export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
 cd /home/shenranw/projects/aip-vshwartz/shenranw/FP_Hallucination
 python run_model.py \
     --dataset CREPE \
-    transformers \
-        --model /home/shenranw/scratch/models/Qwen2.5-1.5B-Instruct
+    openai \
+        --model gpt-4 \
+        --batched_job \
+        --api_key <api key>
