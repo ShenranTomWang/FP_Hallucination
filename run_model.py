@@ -23,6 +23,31 @@ def main(args):
         run_transformers_model(args, dataset, data_loader)
     elif args.model_subcommand == 'openai':
         run_openai_model(args, dataset, data_loader)
+    elif args.model_subcommand == 'openai_check':
+        with open(args.batch_job_info_file, 'r') as f:
+            id = json.load(f)['id']
+        client = openai.Client()
+        completed = False
+        while not completed:
+            time.sleep(10)
+            batch_job = client.batches.retrieve(id)
+            print(f'Batch job status: {batch_job.status}')
+            if batch_job.status in ['failed', 'canceled', 'expired']:
+                raise RuntimeError(f'Batch job failed with status: {batch_job.status}')
+            completed = batch_job.status == 'completed'
+        time.sleep(5)
+        result = client.files.content(batch_job.output_file_id).content
+        result_file_name = "tmp/openai_results_{}.jsonl".format(args.dataset)
+        with open(result_file_name, 'wb') as f:
+            f.write(result)
+        with open(result_file_name, 'r') as f:
+            results = [json.loads(line.strip()) for line in f]
+        for res in tqdm(results, desc='Organizing responses'):
+            i = int(res['custom_id'])
+            dataset[i]['model_answer'] = res['response']['body']['choices'][0]['message']['content']
+        with open(args.out_file, 'w') as f:
+            for data in dataset:
+                f.write(json.dumps(data) + '\n')
 
 def run_transformers_model(args, dataset: list, data_loader: DataLoader):
     model = AutoModelForCausalLM.from_pretrained(
@@ -72,30 +97,12 @@ def run_openai_model_batched(args, client: openai.Client, dataset: list, data_lo
         endpoint="/v1/chat/completions",
         completion_window="24h"
     )
-    completed = False
-    while not completed:
-        time.sleep(10)
-        batch_job = client.batches.retrieve(batch_job.id)
-        print(f'Batch job status: {batch_job.status}')
-        if batch_job.status in ['failed', 'canceled', 'expired']:
-            raise RuntimeError(f'Batch job failed with status: {batch_job.status}')
-        completed = batch_job.status == 'completed'
-    time.sleep(5)
-    result = client.files.content(batch_job.output_file_id).content
-    result_file_name = "tmp/openai_results_{}.jsonl".format(args.dataset)
-    with open(result_file_name, 'wb') as f:
-        f.write(result)
-    with open(result_file_name, 'r') as f:
-        results = [json.loads(line.strip()) for line in f]
-    for res in tqdm(results, desc='Organizing responses'):
-        i = int(res['custom_id'])
-        dataset[i]['model_answer'] = res['response']['body']['choices'][0]['message']['content']
-    with open(args.out_file, 'w') as f:
-        for data in dataset:
-            f.write(json.dumps(data) + '\n')
+    with open('tmp/batch_job_info.json', 'w') as f:
+        json.dump({"id": batch_job.id}, f, indent=4)
 
 def run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data_loader: DataLoader):
-    for i, data in tqdm(enumerate(dataset), desc='Processing dataset'):
+    count = 0
+    for data in tqdm(dataset, desc='Processing dataset'):
         messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
         response = client.chat.completions.create(
             model=args.model,
@@ -110,7 +117,6 @@ def run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data
 
 def run_openai_model(args, dataset: list, data_loader: DataLoader):
     client = openai.Client()
-    count = 0
     if args.batched_job:
         run_openai_model_batched(args, client, dataset, data_loader)
     else:
@@ -136,6 +142,9 @@ if __name__ == '__main__':
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
     openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
+    
+    openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
+    openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
     
     args = parser.parse_args()
     args.dtype = getattr(torch, args.dtype)
