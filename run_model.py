@@ -52,6 +52,7 @@ def run_openai_model_check(args, dataset: list):
     with open(args.out_file, 'w') as f:
         for data in dataset:
             f.write(json.dumps(data) + '\n')
+    os.removedirs('tmp')
 
 def run_transformers_model(args, dataset: list, data_loader: DataLoader):
     model = AutoModelForCausalLM.from_pretrained(
