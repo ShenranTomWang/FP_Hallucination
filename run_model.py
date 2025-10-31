@@ -4,7 +4,7 @@ import torch
 import openai
 from data_gen.data_loader import instantiate_dataloader, DataLoader
 from tqdm import tqdm
-from data_gen.template import PresuppositionExtractionTemplate
+import data_gen.template as template
 
 def main(args):
     data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
@@ -63,7 +63,7 @@ def run_transformers_model(args, dataset: list, data_loader: DataLoader):
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
-        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
+        messages = data_loader.get_question(data, template=getattr(template, args.template), system_role=args.system_role)
         inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
         with torch.no_grad():
             outputs = model.generate(inputs, max_new_tokens=512)
@@ -79,7 +79,7 @@ def run_openai_model_batched(args, client: openai.Client, dataset: list, data_lo
     all_messages = []
     for data in tqdm(dataset, desc='Processing dataset'):
         os.makedirs('tmp', exist_ok=True)
-        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
+        messages = data_loader.get_question(data, template=getattr(template, args.template), system_role=args.system_role)
         all_messages.append(messages)
     with open('tmp/temp_messages.jsonl', 'w') as f:
         for i, messages in enumerate(all_messages):
@@ -108,7 +108,7 @@ def run_openai_model_batched(args, client: openai.Client, dataset: list, data_lo
 def run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data_loader: DataLoader):
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
-        messages = data_loader.get_question(data, template=PresuppositionExtractionTemplate, system_role=args.system_role)
+        messages = data_loader.get_question(data, template=getattr(template, args.template), system_role=args.system_role)
         response = client.chat.completions.create(
             model=args.model,
             messages=messages
@@ -137,6 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cpu' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
     parser.add_argument('--dtype', type=str, default='bfloat16', help='Data type for model parameters')
     parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
+    parser.add_argument('--template', type=str, required=True, help='Template class to use for generating prompts')
     model_subparsers = parser.add_subparsers(title='model_subcommands', dest='model_subcommand')
     
     transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')

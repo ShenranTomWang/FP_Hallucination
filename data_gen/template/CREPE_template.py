@@ -1,9 +1,4 @@
-from abc import ABC, abstractmethod
-
-class Template(ABC):
-    @abstractmethod
-    def generate(self, **kwargs):
-        pass
+from .template import Template
 
 class FewShotExample(Template):
     def __init__(self, question: str, presuppositions: list, **kwargs):

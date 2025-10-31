@@ -1,4 +1,4 @@
-from ..template import Template
+from .template import Template
 
 class FPMovieTemplate(Template):
     def __init__(self, movie: str, time_fp: str, **kwargs):
