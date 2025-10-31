@@ -75,7 +75,7 @@ def run_transformers_model(args, dataset: list, data_loader: DataLoader):
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
 
-def run_openai_model_batched(args, client: openai.Client, dataset: list, data_loader: DataLoader):
+def _run_openai_model_batched(args, client: openai.Client, dataset: list, data_loader: DataLoader):
     all_messages = []
     for data in tqdm(dataset, desc='Processing dataset'):
         os.makedirs('tmp', exist_ok=True)
@@ -105,7 +105,7 @@ def run_openai_model_batched(args, client: openai.Client, dataset: list, data_lo
     with open('tmp/batch_job_info.json', 'w') as f:
         json.dump({"id": batch_job.id}, f, indent=4)
 
-def run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data_loader: DataLoader):
+def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data_loader: DataLoader):
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         messages = data_loader.get_question(data, template=getattr(template, args.template), system_role=args.system_role)
@@ -123,9 +123,9 @@ def run_openai_model_one_by_one(args, client: openai.Client, dataset: list, data
 def run_openai_model(args, dataset: list, data_loader: DataLoader):
     client = openai.Client()
     if args.batched_job:
-        run_openai_model_batched(args, client, dataset, data_loader)
+        _run_openai_model_batched(args, client, dataset, data_loader)
     else:
-        run_openai_model_one_by_one(args, client, dataset, data_loader)
+        _run_openai_model_one_by_one(args, client, dataset, data_loader)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, generate responses using FP extraction prompt templates, store to output file.')
