@@ -1,5 +1,5 @@
 from .data_loader import DataLoader
-from .template import Template
+from ..template import Template
 from typing import Type
 import json
 

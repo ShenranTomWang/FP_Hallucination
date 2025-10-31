@@ -1,8 +1,8 @@
 from .evaluator import Evaluator
 from .utils import rouge1_f1, rougeL_f1, bleurt_score
 
-class CREPEItemEvaluator(Evaluator):
-    def __init__(self, presuppositions: list, model_answer: str):
+class CREPEEvaluator(Evaluator):
+    def __init__(self, presuppositions: list, model_answer: str, **kwargs):
         self.presuppositions = " ".join(presuppositions)
         self.model_answer = model_answer
     
