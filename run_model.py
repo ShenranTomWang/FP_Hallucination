@@ -7,23 +7,28 @@ from tqdm import tqdm
 from data_gen.template import PresuppositionExtractionTemplate
 
 def main(args):
+    if args.model_subcommand == 'openai_check':
+        run_openai_model_check(args)
+        return
+
     data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
-    dataset = data_loader.load_data(split=args.split)
-    dataset = dataset[args.start_idx:]
+    dataset_full = data_loader.load_data(split=args.split)
+    dataset = dataset_full[args.start_idx:]
     if dataset[0].get('few_shot_data') is None:
         few_shot_data = data_loader.load_data(split='train')
         few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
         few_shot_data = random.sample(few_shot_data, args.k)
-        for data in dataset:
+        for data in dataset_full:
             data['few_shot_data'] = few_shot_data
-        data_loader.save_data(dataset, split=args.split)
+        data_loader.save_data(dataset_full, split=args.split)
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
     if args.model_subcommand == 'transformers':
         run_transformers_model(args, dataset, data_loader)
     elif args.model_subcommand == 'openai':
         run_openai_model(args, dataset, data_loader)
-    elif args.model_subcommand == 'openai_check':
+
+def run_openai_model_check(args):
         with open(args.batch_job_info_file, 'r') as f:
             id = json.load(f)['id']
         client = openai.Client()
@@ -127,7 +132,6 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
     parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
     parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
-    parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     parser.add_argument('--device', type=str, default='cpu' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
@@ -137,11 +141,13 @@ if __name__ == '__main__':
     transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')
     transformers_parser.add_argument('--model', type=str, required=True, help='Model name or path for loading from transformers')
     transformers_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
+    transformers_parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     
     openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
     openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
+    openai_parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     
     openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
     openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
@@ -149,6 +155,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.dtype = getattr(torch, args.dtype)
     args.device = torch.device(args.device)
-    args.out_file = args.out_file.format(args.model.split('/')[-1])
+    if args.model_subcommand != 'openai_check':
+        args.out_file = args.out_file.format(args.model.split('/')[-1])
 
     main(args)
