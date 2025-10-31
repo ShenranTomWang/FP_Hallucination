@@ -7,10 +7,6 @@ from tqdm import tqdm
 from data_gen.template import PresuppositionExtractionTemplate
 
 def main(args):
-    if args.model_subcommand == 'openai_check':
-        run_openai_model_check(args)
-        return
-
     data_loader = instantiate_dataloader(dataset_name=args.dataset, file_dir=args.dataset_dir)
     dataset_full = data_loader.load_data(split=args.split)
     dataset = dataset_full[args.start_idx:]
@@ -27,8 +23,12 @@ def main(args):
         run_transformers_model(args, dataset, data_loader)
     elif args.model_subcommand == 'openai':
         run_openai_model(args, dataset, data_loader)
+    elif args.model_subcommand == 'openai_check':
+        run_openai_model_check(args, dataset)
 
-def run_openai_model_check(args):
+def run_openai_model_check(args, dataset: list):
+    result_file_name = f"tmp/openai_results_{args.dataset}.jsonl"
+    if not os.path.exists(result_file_name):
         with open(args.batch_job_info_file, 'r') as f:
             id = json.load(f)['id']
         client = openai.Client()
@@ -42,17 +42,16 @@ def run_openai_model_check(args):
             completed = batch_job.status == 'completed'
         time.sleep(5)
         result = client.files.content(batch_job.output_file_id).content
-        result_file_name = "tmp/openai_results_{}.jsonl".format(args.dataset)
         with open(result_file_name, 'wb') as f:
             f.write(result)
-        with open(result_file_name, 'r') as f:
-            results = [json.loads(line.strip()) for line in f]
-        for res in tqdm(results, desc='Organizing responses'):
-            i = int(res['custom_id'])
-            dataset[i]['model_answer'] = res['response']['body']['choices'][0]['message']['content']
-        with open(args.out_file, 'w') as f:
-            for data in dataset:
-                f.write(json.dumps(data) + '\n')
+    with open(result_file_name, 'r') as f:
+        results = [json.loads(line.strip()) for line in f]
+    for res in tqdm(results, desc='Organizing responses'):
+        i = int(res['custom_id'])
+        dataset[i]['model_answer'] = res['response']['body']['choices'][0]['message']['content']
+    with open(args.out_file, 'w') as f:
+        for data in dataset:
+            f.write(json.dumps(data) + '\n')
 
 def run_transformers_model(args, dataset: list, data_loader: DataLoader):
     model = AutoModelForCausalLM.from_pretrained(
@@ -136,26 +135,25 @@ if __name__ == '__main__':
     parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     parser.add_argument('--device', type=str, default='cpu' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
     parser.add_argument('--dtype', type=str, default='bfloat16', help='Data type for model parameters')
+    parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     model_subparsers = parser.add_subparsers(title='model_subcommands', dest='model_subcommand')
     
     transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')
     transformers_parser.add_argument('--model', type=str, required=True, help='Model name or path for loading from transformers')
     transformers_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
-    transformers_parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     
     openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
     openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
-    openai_parser.add_argument('--dataset', type=str, required=True, help='Name of the dataset to use (e.g., movies, CREPE)')
     
     openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
+    openai_check_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
     
     args = parser.parse_args()
     args.dtype = getattr(torch, args.dtype)
     args.device = torch.device(args.device)
-    if args.model_subcommand != 'openai_check':
-        args.out_file = args.out_file.format(args.model.split('/')[-1])
+    args.out_file = args.out_file.format(args.model.split('/')[-1])
 
     main(args)
