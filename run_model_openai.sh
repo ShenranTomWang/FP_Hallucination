@@ -17,5 +17,7 @@ python run_model.py \
     --dataset CREPE \
     openai \
         --model gpt-4 \
-        --batched_job \
-        --api_key <api key>
+        --dataset CREPE \
+        --batched_job
+
+python run_model.py --dataset CREPE openai_check --model gpt-4
