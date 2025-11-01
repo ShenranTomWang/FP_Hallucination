@@ -1,6 +1,6 @@
 from .template import Template
 
-class FewShotExample(Template):
+class PresuppositionExtractionFewShotExample(Template):
     def __init__(self, question: str, presuppositions: list, **kwargs):
         self.question = question
         self.presuppositions = presuppositions
@@ -15,10 +15,10 @@ class FewShotExample(Template):
             content += f"    ({i}) {p}\n"
         return content
         
-class PresuppositionExtractionTemplate(Template):
+class CREPEPresuppositionExtractionTemplate(Template):
     def __init__(self, question: str, few_shot_data: list, **kwargs):
         self.question = question
-        self.few_shot_data = [FewShotExample(**dp) for dp in few_shot_data]
+        self.few_shot_data = [PresuppositionExtractionFewShotExample(**dp) for dp in few_shot_data]
 
     def generate(self, system_role: str = "system", **kwargs):
         few_shot_content = "\n".join([dp.generate() for dp in self.few_shot_data])

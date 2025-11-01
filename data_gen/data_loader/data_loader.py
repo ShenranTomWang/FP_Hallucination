@@ -6,7 +6,7 @@ datasetname2loader = {
     'CREPE': 'CREPELoader'
 }
 
-def instantiate_dataloader(dataset_name: str, file_dir: str = 'dataset'):
+def instantiate_dataloader(dataset_name: str, file_dir: str = 'dataset') -> 'DataLoader':
     loader_class_name = datasetname2loader[dataset_name]
     module = importlib.import_module('data_gen.data_loader')
     cls = getattr(module, loader_class_name)
@@ -40,10 +40,6 @@ class DataLoader(ABC):
                 for line in f:
                     data.append(json.loads(line))
         return data
-
-    @abstractmethod
-    def get_question(self, dp: dict, **kwargs) -> str:
-        pass
     
     @abstractmethod
     def save_data(self, data: list[dict], out_path: str = None, **kwargs):

@@ -14,10 +14,9 @@ export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
 
 cd /home/shenranw/projects/aip-vshwartz/shenranw/FP_Hallucination
 python run_model.py \
-    --dataset CREPE \
     openai \
         --model gpt-4 \
-        --dataset CREPE \
-        --batched_job
+        --batched_job \
+        --operator CREPEPresuppositionExtractionOperator
 
-python run_model.py --dataset CREPE openai_check --model gpt-4
+python run_model.py openai_check --model gpt-4 --operator CREPEPresuppositionExtractionOperator
