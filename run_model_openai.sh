@@ -23,3 +23,14 @@ python run_model.py \
     openai_check \
     --model gpt-4 \
     --operator CREPEPresuppositionExtractionOperator
+
+python run_model.py \
+    openai \
+        --model gpt-4 \
+        --batched_job \
+        --operator CREPEFeedbackActionOperator
+
+python run_model.py \
+    openai_check \
+    --model gpt-4 \
+    --operator CREPEFeedbackActionOperator

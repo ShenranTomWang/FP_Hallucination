@@ -22,16 +22,12 @@ def main(args):
         run_evaluate(args, operator)
         return
 
-    operator.add_data_module(file_dir=args.dataset_dir)
-    dataset_full = operator.dataloader.load_data(split=args.split)
+    if args.dataset_dir is None:
+        operator.add_data_module(model_name=args.model)
+    else:
+        operator.add_data_module(file_dir=args.dataset_dir, model_name=args.model)
+    dataset_full = operator.load_data(split=args.split, k = args.k if hasattr(args, 'k') else 0)
     dataset = dataset_full[args.start_idx:]
-    if dataset[0].get('few_shot_data') is None:
-        few_shot_data = operator.dataloader.load_data(split='train')
-        few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
-        few_shot_data = random.sample(few_shot_data, args.k)
-        for data in dataset_full:
-            data['few_shot_data'] = few_shot_data
-        operator.dataloader.save_data(dataset_full, split=args.split)
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
     if args.command == 'transformers':
@@ -178,7 +174,7 @@ if __name__ == '__main__':
     transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')
     transformers_parser.add_argument('--model', type=str, required=True, help='Model name or path for loading from transformers')
     transformers_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
-    transformers_parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    transformers_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
     transformers_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     transformers_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     transformers_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
@@ -191,7 +187,7 @@ if __name__ == '__main__':
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
     openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
-    openai_parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    openai_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
     openai_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     openai_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
@@ -203,7 +199,7 @@ if __name__ == '__main__':
     openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
     openai_check_parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     openai_check_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
-    openai_check_parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    openai_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
     openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     
