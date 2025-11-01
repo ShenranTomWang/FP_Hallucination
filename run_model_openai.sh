@@ -19,4 +19,7 @@ python run_model.py \
         --batched_job \
         --operator CREPEPresuppositionExtractionOperator
 
-python run_model.py openai_check --model gpt-4 --operator CREPEPresuppositionExtractionOperator
+python run_model.py \
+    openai_check \
+    --model gpt-4 \
+    --operator CREPEPresuppositionExtractionOperator

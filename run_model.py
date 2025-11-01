@@ -92,7 +92,7 @@ def run_openai_model_check(args, dataset: list, operator: data_operator.DataOper
         results = [json.loads(line.strip()) for line in f]
     for res in tqdm(results, desc='Organizing responses'):
         i = int(res['custom_id'])
-        dataset[i][args.output_key] = res['response']['body']['choices'][0]['message']['content']
+        dataset[i] = operator.parse_response_openai(res, dataset[i])
     args.out_file = args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}')
     with open(args.out_file, 'w') as f:
         for data in dataset:
@@ -203,6 +203,9 @@ if __name__ == '__main__':
     openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
     openai_check_parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     openai_check_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
+    openai_check_parser.add_argument('--dataset_dir', type=str, default='dataset', help='Path to the dataset directory (JSONL format)')
+    openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    openai_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     
     evaluate_parser = model_subparsers.add_parser('evaluate', help='Evaluate model outputs using specified evaluator')
     evaluate_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')
