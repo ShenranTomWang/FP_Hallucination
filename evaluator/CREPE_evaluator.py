@@ -2,8 +2,9 @@ from .evaluator import Evaluator
 from .utils import rouge1_f1, rougeL_f1, bleurt_score
 
 class CREPEEvaluator(Evaluator):
-    def __init__(self, presuppositions: list, model_answer: str, **kwargs):
+    def __init__(self, presuppositions: list, raw_presuppositions: list, model_answer: str, **kwargs):
         self.presuppositions = " ".join(presuppositions)
+        self.raw_presuppositions = " ".join(raw_presuppositions)
         self.model_answer = model_answer
     
     def evaluate_rouge1_f1(self):

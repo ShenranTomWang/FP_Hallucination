@@ -76,14 +76,14 @@ def _save_top_bottom_k(data: list, score_key: str, k: int, out_dir: str):
         for dp in sorted_data[-k:]:
             f.write(f'{score_key}: {dp[score_key]:.4f}\n')
             f.write(f'Question: {dp["question"]}\n')
-            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
+            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
             f.write(f'Model Answer: {dp["model_answer"]}\n')
             f.write('-' * 20 + '\n\n')
     with open(os.path.join(out_dir, f'bottom_{k}_{score_key}.txt'), 'w') as f:
         for dp in sorted_data[:k]:
             f.write(f'{score_key}: {dp[score_key]:.4f}\n')
             f.write(f'Question: {dp["question"]}\n')
-            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
+            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
             f.write(f'Model Answer: {dp["model_answer"]}\n')
             f.write('-' * 20 + '\n\n')
 
