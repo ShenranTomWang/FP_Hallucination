@@ -2,7 +2,7 @@ from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedba
 from evaluator import CREPEEvaluator
 from .data_operator import DataOperator
 from data_gen.data_loader import instantiate_dataloader
-import random
+import random, os
 
 class CREPEOperator(DataOperator):
     def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
@@ -39,17 +39,18 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.action_name = "CREPE_Presupposition_Extraction"
         self.dataloader = None
 
-    def add_data_module(self, model_name: str, file_dir: str = 'dataset', **kwargs):
+    def add_data_module(self, file_dir: str = 'dataset', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir)
 
     def load_data(self, split: str, k: int, **kwargs):
+        dataset = self.dataloader.load_data(split=split)
         if dataset[0].get('few_shot_data') is None:
             few_shot_data = self.dataloader.load_data(split='train')
             few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
             few_shot_data = random.sample(few_shot_data, k)
-            for data in dataset_full:
+            for data in dataset:
                 data['few_shot_data'] = few_shot_data
-            self.dataloader.save_data(dataset_full, split=split)
+            self.dataloader.save_data(dataset, split=split)
         return self.dataloader.load_data(split)
 
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:

@@ -29,6 +29,7 @@ def main(args):
     dataset_full = operator.load_data(split=args.split, k = args.k if hasattr(args, 'k') else 0)
     dataset = dataset_full[args.start_idx:]
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
+    breakpoint()
     
     if args.command == 'transformers':
         run_transformers_model(args, dataset, operator)
