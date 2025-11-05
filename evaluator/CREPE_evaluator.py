@@ -1,17 +1,27 @@
+from typing import List
 from .evaluator import Evaluator
-from .utils import rouge1_f1, rougeL_f1, bleurt_score
+from .utils import rouge1_f1, rougeL_f1, bleurt_score, bert_score
 
 class CREPEEvaluator(Evaluator):
-    def __init__(self, presuppositions: list, raw_presuppositions: list, model_answer: str, **kwargs):
-        self.presuppositions = " ".join(presuppositions)
-        self.raw_presuppositions = " ".join(raw_presuppositions)
+    def __init__(self, presuppositions: List[str], raw_presuppositions: List[str], model_answer: List[str], **kwargs):
+        self.presuppositions = presuppositions
+        self.raw_presuppositions = raw_presuppositions
         self.model_answer = model_answer
     
     def evaluate_rouge1_f1(self):
-        return rouge1_f1(self.model_answer, [self.presuppositions])
+        rouge1_f1s = []
+        for answer in self.model_answer:
+            rouge1_f1s.append(rouge1_f1(answer, [" ".join(self.presuppositions)]))
+        return max(rouge1_f1s)
 
     def evaluate_rougeL_f1(self):
-        return rougeL_f1(self.model_answer, [self.presuppositions])
+        rougeL_f1s = []
+        for answer in self.model_answer:
+            rougeL_f1s.append(rougeL_f1(answer, [" ".join(self.presuppositions)]))
+        return max(rougeL_f1s)
 
     def evaluate_bleurt_f1(self):
-        return bleurt_score(self.model_answer, [self.presuppositions])
+        return bleurt_score(self.model_answer, [" ".join(self.presuppositions)])
+    
+    def evaluate_bert_score_f1(self):
+        return bert_score(self.model_answer, self.presuppositions)

@@ -1,5 +1,13 @@
-from typing import List, Iterable, Tuple, Callable
+from typing import List, Iterable, Callable
 from collections import Counter
+import evaluate
+from bert_score import BERTScorer
+from ignite.metrics import RougeL, RougeN
+
+__CACHE__ = {
+    "bleurt_models": None,
+    "bert_scorer": None
+}
 
 def default_tok(s: str) -> List[str]:
     return s.lower().strip().split()
@@ -16,17 +24,9 @@ def rouge1_f1(
     ROUGE-1 F1 over possibly multiple references (take the best ref).
     """
     c_tokens = tok(candidate)
-    c_counts = Counter(c_tokens)
-
-    def rouge1_pair(ref: str) -> float:
-        r_tokens = tok(ref)
-        r_counts = Counter(r_tokens)
-        overlap = sum((c_counts & r_counts).values())
-        prec = overlap / max(len(c_tokens), 1)
-        rec  = overlap / max(len(r_tokens), 1)
-        return f1(prec, rec)
-
-    return max(rouge1_pair(r) for r in references)
+    m = RougeN(ngram=1, multiref='best')
+    m.update([c_tokens], [tok(r) for r in references])
+    return m.compute()['Rouge-1-F']
 
 def _lcs_len(a: List[str], b: List[str]) -> int:
     n, m = len(a), len(b)
@@ -52,18 +52,12 @@ def rougeL_f1(
     Multiple refs: take the best ref.
     """
     c_tokens = tok(candidate)
-
-    def rougeL_pair(ref: str) -> float:
-        r_tokens = tok(ref)
-        lcs = _lcs_len(c_tokens, r_tokens)
-        prec = lcs / max(len(c_tokens), 1)
-        rec  = lcs / max(len(r_tokens), 1)
-        return f1(prec, rec)
-
-    return max(rougeL_pair(r) for r in references)
+    m = RougeL(multiref='best')
+    m.update([c_tokens], [tok(r) for r in references])
+    return m.compute()['Rouge-L-F']
 
 def bleurt_score(
-    candidate: str,
+    candidates: Iterable[str],
     references: Iterable[str],
     model_name: str = "Elron/bleurt-large-512",
     reduction: str = "max"
@@ -72,17 +66,32 @@ def bleurt_score(
     Compute BLEURT for candidate vs multiple references.
     reduction: "max" or "mean"
     """
-    try:
-        import evaluate
-    except ImportError:
-        raise RuntimeError(
-            "Please install: pip install evaluate transformers tensorflow"
-        )
-    bleurt = evaluate.load("bleurt", module_type="metric", config_name=model_name)
+    bleurt = __CACHE__.get("bleurt_models")
+    if bleurt is None:
+        __CACHE__["bleurt_models"] = evaluate.load("bleurt", module_type="metric", config_name=model_name)
+        bleurt = __CACHE__["bleurt_models"]
     scores = []
     for ref in references:
-        res = bleurt.compute(predictions=[candidate], references=[ref])
-        scores.append(res["scores"][0])
+        _scores = []
+        for candidate in candidates:
+            res = bleurt.compute(predictions=[candidate], references=[ref], return_details=True)
+            _scores.append(res["scores"][0])
+        scores.append(max(_scores))
     if reduction == "mean":
         return sum(scores) / len(scores)
-    return max(scores)
+    else:
+        return max(scores)
+
+def bert_score(
+    candidates: List[str],
+    references: List[str]
+) -> float:
+    """
+    Compute BERTScore F1 for lists of candidates and references.
+    """
+    bert_scorer = __CACHE__.get("bert_scorer")
+    if bert_scorer is None:
+        bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
+        __CACHE__["bert_scorer"] = bert_scorer
+    _, _, F1 = bert_scorer.score(candidates, references)
+    return F1.mean()

@@ -1,11 +1,22 @@
 from abc import ABC, abstractmethod
 from typing import List
+from response import Response
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 class DataOperator(ABC):
     action_name: str
+    response_cls: Response
     
     @abstractmethod
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+        pass
+    
+    @abstractmethod
+    def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, **kwargs) -> Response:
+        pass
+    
+    @abstractmethod
+    def message2openai_request(self, id: str, model: str, messages: List[str], **kwargs) -> dict:
         pass
 
     @abstractmethod

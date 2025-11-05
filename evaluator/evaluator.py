@@ -12,3 +12,7 @@ class Evaluator(ABC):
     @abstractmethod
     def evaluate_bleurt_f1(self) -> float:
         pass
+    
+    @abstractmethod
+    def evaluate_bert_score_f1(self) -> float:
+        pass

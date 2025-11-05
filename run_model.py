@@ -104,12 +104,8 @@ def run_transformers_model(args, dataset: list, operator: data_operator.DataOper
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         messages = operator.prepare_message(data, system_role=args.system_role)
-        inputs = tokenizer.apply_chat_template(messages, return_tensors='pt').to(args.device)
-        with torch.no_grad():
-            outputs = model.generate(inputs, max_new_tokens=512)
-        outputs = outputs.cpu()[:, inputs.shape[1]:]
-        generation = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        data['model_answer'] = generation       # TODO: this needs to be refactored
+        response = operator.run_transformer_model(model, tokenizer, messages, device=args.device)
+        data['model_answer'] = response.model_dump()
         with open(args.out_file, 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1
@@ -123,15 +119,7 @@ def _run_openai_model_batched(args, client: openai.Client, dataset: list, operat
         all_messages.append(messages)
     with open('tmp/temp_messages.jsonl', 'w') as f:
         for i, messages in enumerate(all_messages):
-            task = {
-                "custom_id": f"{i}",
-                "method": "POST",
-                "url": "/v1/chat/completions",
-                "body": {
-                    "model": args.model,
-                    "messages": messages
-                }
-            }
+            task = operator.message2openai_request(f"{i}", args.model, messages)
             f.write(json.dumps(task) + '\n')
     batch_file = client.files.create(
         file=open('tmp/temp_messages.jsonl', "rb"),
@@ -151,7 +139,8 @@ def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, ope
         messages = operator.prepare_message(data, system_role=args.system_role)
         response = client.chat.completions.create(
             model=args.model,
-            messages=messages
+            messages=messages,
+            response_format=operator.response_cls.model_json_schema()
         )
         generation = response.choices[0].message.content
         data['model_answer'] = generation

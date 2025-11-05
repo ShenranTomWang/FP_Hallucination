@@ -3,8 +3,14 @@ from evaluator import CREPEEvaluator
 from .data_operator import DataOperator
 from data_gen.data_loader import instantiate_dataloader
 import random, os
+import outlines
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, Response
+import torch
 
 class CREPEOperator(DataOperator):
+    transformer_model: outlines.models.transformers.Transformers = None
+
     def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
         evaluator = CREPEEvaluator()
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
@@ -13,7 +19,28 @@ class CREPEOperator(DataOperator):
             bleurt_f1 = evaluator.evaluate_bleurt_f1()
             return rouge1_f1, rougeL_f1, bleurt_f1
         return rouge1_f1, rougeL_f1, None
-    
+
+    def message2openai_request(self, id: str, model: str, messages: List[str], **kwargs) -> dict:
+        return {
+            "custom_id": id,
+            "method": "POST",
+            "url": "/v1/chat/completions",
+            "body": {
+                "model": model,
+                "messages": messages,
+                "response_format": self.response_cls.model_json_schema()
+            }
+        }
+
+    def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, **kwargs) -> Response:
+        if not self.transformer_model:
+            self.transformer_model = outlines.from_transformers(
+                model, tokenizer
+            )
+        prompt = tokenizer.apply_chat_template(messages, return_tensors='pt').to(device)
+        response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
+        return self.response_cls.model_validate(response)
+
     def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str):
         sorted_data = sorted(
             [dp for dp in data if dp.get("model_detected_presuppositions") is not None and dp.get(score_key) is not None],
@@ -38,6 +65,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Presupposition_Extraction"
         self.dataloader = None
+        self.response_cls = CREPEPresuppositionExtractionResponse
 
     def add_data_module(self, file_dir: str = 'dataset', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir)
@@ -65,6 +93,7 @@ class CREPEFeedbackActionOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Feedback_Action"
         self.dataloader = None
+        self.response_cls = CREPEFeedbackActionResponse
 
     def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
