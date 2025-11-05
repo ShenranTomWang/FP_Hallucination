@@ -9,7 +9,6 @@ class PresuppositionExtractionFewShotExample(Template):
 
     def generate(self, **kwargs):
         content = f"""
-            Presuppositions:
             {CREPEPresuppositionExtractionResponse(presuppositions=self.presuppositions).model_dump_json(indent=4)}\n
         """
         return content
@@ -47,7 +46,6 @@ class FeedbackActionFewShotExample(Template):
         presuppositions = self.presuppositions
         presuppositions.append("There is a clear and single answer to the question.")
         content = f"""
-            Presuppositions: 
             {CREPEPresuppositionExtractionResponse(presuppositions=presuppositions).model_dump_json(indent=4)}\n
         """
         if self.raw_corrections != "":

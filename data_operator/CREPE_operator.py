@@ -7,9 +7,10 @@ import outlines
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, Response
 import torch
+from typing import List
 
 class CREPEOperator(DataOperator):
-    transformer_model: outlines.models.transformers.Transformers = None
+    transformer_model: outlines.models.Transformers = None
 
     def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
         evaluator = CREPEEvaluator()
