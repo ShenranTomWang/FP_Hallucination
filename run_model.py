@@ -103,7 +103,6 @@ def run_transformers_model(args, dataset: list, operator: data_operator.DataOper
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         messages = operator.prepare_message(data, system_role=args.system_role)
-        breakpoint()
         response = operator.run_transformer_model(model, tokenizer, messages, device=args.device)
         data['model_answer'] = response.model_dump()
         with open(args.out_file, 'a') as f:
