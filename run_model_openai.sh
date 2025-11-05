@@ -34,3 +34,15 @@ python run_model.py \
     openai_check \
     --model gpt-4 \
     --operator CREPEFeedbackActionOperator
+
+python run_model.py \
+    evaluate \
+    --file out/curated_dataset_gpt-4_CREPE_Presupposition_Extraction.jsonl \
+    --operator CREPEPresuppositionExtractionOperator \
+    --show_top_bottom_k 20
+
+python run_model.py \
+    evaluate \
+    --file out/curated_dataset_gpt-4_CREPE_Feedback_Action.jsonl \
+    --operator CREPEFeedbackActionOperator \
+    --show_top_bottom_k 20
