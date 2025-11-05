@@ -104,7 +104,7 @@ def run_transformers_model(args, dataset: list, operator: data_operator.DataOper
     for data in tqdm(dataset, desc='Processing dataset'):
         messages = operator.prepare_message(data, system_role=args.system_role)
         response = operator.run_transformer_model(model, tokenizer, messages, device=args.device)
-        data['model_answer'] = response.model_dump()
+        data = operator.parse_response_transformers(response, data)
         with open(args.out_file, 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1

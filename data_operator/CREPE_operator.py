@@ -8,6 +8,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, Response
 import torch
 from typing import List
+from pydantic import BaseModel
 
 class CREPEOperator(DataOperator):
     transformer_model: outlines.models.Transformers = None
@@ -90,6 +91,10 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
         save_dp['model_detected_presuppositions'] = response['response']['body']['choices'][0]['message']['content']
         return save_dp
+    
+    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
+        save_dp['model_detected_presuppositions'] = response.model_dump()
+        return save_dp
 
 class CREPEFeedbackActionOperator(CREPEOperator):
     def __init__(self):
@@ -109,4 +114,8 @@ class CREPEFeedbackActionOperator(CREPEOperator):
     
     def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
         save_dp['model_feedback_action'] = response['response']['body']['choices'][0]['message']['content']
+        return save_dp
+    
+    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
+        save_dp['model_feedback_action'] = response.model_dump()
         return save_dp

@@ -3,6 +3,7 @@ from typing import List
 from response import Response
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from pydantic import BaseModel
 
 class DataOperator(ABC):
     action_name: str
@@ -23,6 +24,10 @@ class DataOperator(ABC):
     @abstractmethod
     def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
         pass
+    
+    @abstractmethod
+    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
+        pass 
 
     @abstractmethod
     def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
