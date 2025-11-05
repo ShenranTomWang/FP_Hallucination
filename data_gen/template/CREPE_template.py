@@ -20,6 +20,10 @@ class CREPEPresuppositionExtractionTemplate(Template):
         self.few_shot_data = [PresuppositionExtractionFewShotExample(**dp) for dp in few_shot_data]
 
     def generate(self, system_role: str = "system", **kwargs):
+        few_shot = []
+        for dp in self.few_shot_data:
+            few_shot.append({"role": "user", "content": dp.question})
+            few_shot.append({"role": "assistant", "content": dp.generate()})
         messages = [
             {
                 "role": system_role,
@@ -28,11 +32,7 @@ class CREPEPresuppositionExtractionTemplate(Template):
                     Your task is to extract assumptions implicit in a given question.
                     You must notice that considering the intention of the question will be helpful to extract a hidden assumption of the given question.
                 """},
-            *[
-                {"role": "user", "content": dp.question},
-                {"role": "assistant", "content": dp.generate()}
-                for dp in self.few_shot_data
-            ],
+            *few_shot,
             {"role": "user", "content": self.question}
         ]
         return messages
@@ -66,7 +66,10 @@ class CREPEFeedbackActionTemplate(Template):
         self.few_shot_data = [FeedbackActionFewShotExample(**dp) for dp in few_shot_data]
 
     def generate(self, system_role: str = "system", **kwargs):
-        few_shot_content = "\n".join([dp.generate() for dp in self.few_shot_data])
+        few_shot = []
+        for dp in self.few_shot_data:
+            few_shot.append({"role": "user", "content": dp.question})
+            few_shot.append({"role": "assistant", "content": dp.generate()})
         messages = [
             {
                 "role": system_role,
@@ -75,11 +78,7 @@ class CREPEFeedbackActionTemplate(Template):
                     You will be given a question and the assumptions that are implicit in the question.
                     Your task is to first, provide feedback on the question based on whether it contains any false assumptions nad then provide a guideline for answering the question.
                 """},
-            *[
-                {"role": "user", "content": dp.question},
-                {"role": "assistant", "content": dp.generate()}
-                for dp in self.few_shot_data
-            ],
+            *few_shot,
             {"role": "user", "content": f"Question: {self.question}\nPresuppositions: {self.model_detected_presuppositions}\n"}
         ]
         return messages

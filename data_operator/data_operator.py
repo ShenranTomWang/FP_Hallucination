@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 from response import Response
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 class DataOperator(ABC):
     action_name: str
