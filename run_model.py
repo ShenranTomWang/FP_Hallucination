@@ -39,15 +39,11 @@ def main(args):
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
-    evaluator_class: evaluator.Evaluator = getattr(evaluator, args.evaluator)
-    evaluators = [evaluator_class(**dp) for dp in data if dp.get('model_detected_presuppositions') is not None]
-    for i, ev in tqdm(enumerate(evaluators), desc='Evaluating'):
-        rouge1_f1 = ev.evaluate_rouge1_f1()
-        rougeL_f1 = ev.evaluate_rougeL_f1()
+    results = [operator.evaluate(dp, run_bleurt=args.run_bleurt) for dp in data if dp.get('model_detected_presuppositions') is not None]
+    for i, (rouge1_f1, rougeL_f1, bleurt_f1) in tqdm(enumerate(results), desc='Evaluating'):
         data[i]['rouge1_f1'] = rouge1_f1
         data[i]['rougeL_f1'] = rougeL_f1
         if args.run_bleurt:
-            bleurt_f1 = ev.evaluate_bleurt_f1()
             data[i]['bleurt_f1'] = bleurt_f1
     with open(args.file, 'w') as f:
         for dp in data:
@@ -191,9 +187,9 @@ if __name__ == '__main__':
     openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     
-    evaluate_parser = model_subparsers.add_parser('evaluate', help='Evaluate model outputs using specified evaluator')
+    evaluate_parser = model_subparsers.add_parser('evaluate', help='Evaluate model outputs using specified operator')
     evaluate_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')
-    evaluate_parser.add_argument('--evaluator', type=str, required=True, help='Evaluator class to use for evaluation (e.g., CREPEEvaluator)')
+    evaluate_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for evaluation')
     evaluate_parser.add_argument('--run_bleurt', action='store_true', help='Whether to run BLEURT evaluation (may be slow)')
     evaluate_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
     

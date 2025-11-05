@@ -1,5 +1,4 @@
 from typing import List, Iterable, Callable
-from collections import Counter
 import evaluate
 from bert_score import BERTScorer
 from ignite.metrics import RougeL, RougeN
@@ -23,24 +22,10 @@ def rouge1_f1(
     """
     ROUGE-1 F1 over possibly multiple references (take the best ref).
     """
-    c_tokens = tok(candidate)
     m = RougeN(ngram=1, multiref='best')
-    m.update([c_tokens], [tok(r) for r in references])
+    c_tokens = tok(candidate)
+    m.update(([c_tokens], [tok(r) for r in references]))
     return m.compute()['Rouge-1-F']
-
-def _lcs_len(a: List[str], b: List[str]) -> int:
-    n, m = len(a), len(b)
-    dp = [0] * (m + 1)
-    for i in range(1, n + 1):
-        prev = 0
-        for j in range(1, m + 1):
-            tmp = dp[j]
-            if a[i-1] == b[j-1]:
-                dp[j] = prev + 1
-            else:
-                dp[j] = max(dp[j], dp[j-1])
-            prev = tmp
-    return dp[m]
 
 def rougeL_f1(
     candidate: str,
@@ -53,7 +38,7 @@ def rougeL_f1(
     """
     c_tokens = tok(candidate)
     m = RougeL(multiref='best')
-    m.update([c_tokens], [tok(r) for r in references])
+    m.update(([c_tokens], [tok(r) for r in references]))
     return m.compute()['Rouge-L-F']
 
 def bleurt_score(

@@ -12,9 +12,10 @@ from pydantic import BaseModel
 
 class CREPEOperator(DataOperator):
     transformer_model: outlines.models.Transformers = None
+    answer_key: str
 
     def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
-        evaluator = CREPEEvaluator()
+        evaluator = CREPEEvaluator(**eval_dp, model_answer=[eval_dp[self.answer_key]])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bleurt:
@@ -33,6 +34,14 @@ class CREPEOperator(DataOperator):
                 "response_format": self.response_cls.model_json_schema()
             }
         }
+        
+    def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
+        save_dp[self.answer_key] = response['response']['body']['choices'][0]['message']['content']
+        return save_dp
+    
+    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
+        save_dp[self.answer_key] = response.model_dump()
+        return save_dp
 
     def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, **kwargs) -> Response:
         if not self.transformer_model:
@@ -69,6 +78,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.action_name = "CREPE_Presupposition_Extraction"
         self.dataloader = None
         self.response_cls = CREPEPresuppositionExtractionResponse
+        self.answer_key = "model_detected_presuppositions"
 
     def add_data_module(self, file_dir: str = 'dataset', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir)
@@ -87,20 +97,13 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
         template = CREPEPresuppositionExtractionTemplate(**raw_dp, system_role=system_role)
         return template.generate()
-    
-    def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
-        save_dp['model_detected_presuppositions'] = response['response']['body']['choices'][0]['message']['content']
-        return save_dp
-    
-    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
-        save_dp['model_detected_presuppositions'] = response.model_dump()
-        return save_dp
 
 class CREPEFeedbackActionOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Feedback_Action"
         self.dataloader = None
         self.response_cls = CREPEFeedbackActionResponse
+        self.answer_key = "model_feedback_action"
 
     def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
@@ -111,11 +114,3 @@ class CREPEFeedbackActionOperator(CREPEOperator):
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
         template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role)
         return template.generate()
-    
-    def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
-        save_dp['model_feedback_action'] = response['response']['body']['choices'][0]['message']['content']
-        return save_dp
-    
-    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
-        save_dp['model_feedback_action'] = response.model_dump()
-        return save_dp
