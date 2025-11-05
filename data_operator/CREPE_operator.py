@@ -38,9 +38,10 @@ class CREPEOperator(DataOperator):
             self.transformer_model = outlines.from_transformers(
                 model, tokenizer
             )
-        prompt = tokenizer.apply_chat_template(messages, return_tensors='pt').to(device)
+        prompt = tokenizer.apply_chat_template(messages)
+        prompt = tokenizer.decode(prompt)
         response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
-        return self.response_cls.model_validate(response)
+        return self.response_cls.model_validate_json(response)
 
     def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str):
         sorted_data = sorted(

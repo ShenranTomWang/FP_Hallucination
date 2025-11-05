@@ -51,7 +51,6 @@ outlines-core==0.1.26
 packaging==25.0
 pandas==2.3.3
 pillow==12.0.0
-pip @ file:///home/task_176054724192090/conda-bld/pip_1760547668629/work
 propcache==0.4.1
 psutil==7.1.2
 pyarrow==22.0.0
