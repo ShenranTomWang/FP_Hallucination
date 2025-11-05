@@ -1,8 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import json, argparse, os, random, time
+import json, argparse, os, time
 import torch
 import openai
-from data_gen.data_loader import instantiate_dataloader, DataLoader
 from tqdm import tqdm
 import data_operator
 import evaluator
@@ -104,6 +103,7 @@ def run_transformers_model(args, dataset: list, operator: data_operator.DataOper
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
         messages = operator.prepare_message(data, system_role=args.system_role)
+        breakpoint()
         response = operator.run_transformer_model(model, tokenizer, messages, device=args.device)
         data['model_answer'] = response.model_dump()
         with open(args.out_file, 'a') as f:
