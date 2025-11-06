@@ -55,7 +55,7 @@ class CREPEOperator(DataOperator):
 
     def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str):
         sorted_data = sorted(
-            [dp for dp in data if dp.get("model_detected_presuppositions") is not None and dp.get(score_key) is not None],
+            [dp for dp in data if dp.get(self.answer_key) is not None and dp.get(score_key) is not None],
             key=lambda x: x[score_key]
         )
         with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
@@ -63,14 +63,14 @@ class CREPEOperator(DataOperator):
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
-                f.write(f'Model Answer: {dp["model_detected_presuppositions"]}\n')
+                f.write(f'Model Answer: {dp[self.answer_key]}\n')
                 f.write('-' * 20 + '\n\n')
         with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[:k]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
-                f.write(f'Model Answer: {dp["model_detected_presuppositions"]}\n')
+                f.write(f'Model Answer: {dp[self.answer_key]}\n')
                 f.write('-' * 20 + '\n\n')
 
 class CREPEPresuppositionExtractionOperator(CREPEOperator):

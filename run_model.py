@@ -39,12 +39,16 @@ def main(args):
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
-    results = [operator.evaluate(dp, run_bleurt=args.run_bleurt) for dp in data if dp.get('model_detected_presuppositions') is not None]
-    for i, (rouge1_f1, rougeL_f1, bleurt_f1) in tqdm(enumerate(results), desc='Evaluating'):
-        data[i]['rouge1_f1'] = rouge1_f1
-        data[i]['rougeL_f1'] = rougeL_f1
+    for i, dp in tqdm(enumerate(data), desc='Evaluating'):
+        if dp.get(operator.answer_key) is None:
+            dp['rouge1_f1'] = 0
+            dp['rougeL_f1'] = 0
+            if args.run_bleurt:
+                dp['bleurt_f1'] = 0
+            continue
+        dp['rouge1_f1'], dp['rougeL_f1'], bleurt_f1 = operator.evaluate(dp, run_bleurt=args.run_bleurt)
         if args.run_bleurt:
-            data[i]['bleurt_f1'] = bleurt_f1
+            dp['bleurt_f1'] = bleurt_f1
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
