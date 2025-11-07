@@ -22,4 +22,5 @@ cd /home/shenranw/FP_Hallucination
 python run_model.py \
     transformers \
         --model /scratch/st-hgonen-1/shenranw/models/Qwen2.5-1.5B-Instruct \
-        --operator CREPEPresuppositionExtractionOperator
+        --operator CREPEPresuppositionExtractionOperator \
+        --out_dir /home/shenranw/scratch-hgonen/FP_Hallucination/out

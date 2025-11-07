@@ -11,8 +11,9 @@ def main(args):
     if args.command == 'transformers':
         args.dtype = getattr(torch, args.dtype)
         args.device = torch.device(args.device)
-    if args.command in ['transformers', 'openai']:
+    if args.command in ['transformers', 'openai', 'openai_check']:
         args.out_file = args.out_file.format(args.model.split('/')[-1])
+        args.out_file = os.path.join(args.out_dir, args.out_file)
     if hasattr(args, 'operator'):
         operator_class: data_operator.DataOperator = getattr(data_operator, args.operator)
         operator = operator_class()
@@ -169,7 +170,8 @@ if __name__ == '__main__':
     transformers_parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
     transformers_parser.add_argument('--device', type=str, default='cpu' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
     transformers_parser.add_argument('--dtype', type=str, default='bfloat16', help='Data type for model parameters')
-    transformers_parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    transformers_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
+    transformers_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
 
     openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
@@ -180,12 +182,14 @@ if __name__ == '__main__':
     openai_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
     openai_parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
-    openai_parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    openai_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
+    openai_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     
     openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
     openai_check_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
-    openai_check_parser.add_argument('--out_file', type=str, default='out/curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    openai_check_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
+    openai_check_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     openai_check_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
     openai_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
     openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
