@@ -9,7 +9,7 @@ class PresuppositionExtractionFewShotExample(Template):
 
     def generate(self, **kwargs):
         content = f"""
-            {CREPEPresuppositionExtractionResponse(presuppositions=self.presuppositions).model_dump_json(indent=4)}\n
+            {CREPEPresuppositionExtractionResponse(presuppositions=self.presuppositions).model_dump_json()}\n
         """
         return content
         
@@ -46,7 +46,7 @@ class FeedbackActionFewShotExample(Template):
         presuppositions = self.presuppositions
         presuppositions.append("There is a clear and single answer to the question.")
         content = f"""
-            {CREPEPresuppositionExtractionResponse(presuppositions=presuppositions).model_dump_json(indent=4)}\n
+            {CREPEPresuppositionExtractionResponse(presuppositions=presuppositions).model_dump_json()}\n
         """
         if self.raw_corrections != "":
             feedback = f"The question contains a false presupposition that {self.presuppositions[0]}."
@@ -54,7 +54,7 @@ class FeedbackActionFewShotExample(Template):
         else:
             content += f"The question contains a false presupposition that there is a clear and single answer to the question.\n"
             content += f"Correct the false assumption that there is a clear and single answer to the question and respond based on the corrected assumption.\n"
-        content += f"{CREPEFeedbackActionResponse(feedback=feedback, action=action).model_dump_json(indent=4)}\n"
+        content += f"{CREPEFeedbackActionResponse(feedback=feedback, action=action).model_dump_json()}\n"
         return content
 
 class CREPEFeedbackActionTemplate(Template):
