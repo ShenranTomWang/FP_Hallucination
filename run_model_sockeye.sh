@@ -21,6 +21,7 @@ export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
 cd /home/shenranw/FP_Hallucination
 python run_model.py \
     transformers \
+        --dataset_dir /home/shenranw/scratch-hgonen/datasets \
         --model /scratch/st-hgonen-1/shenranw/models/Qwen2.5-1.5B-Instruct \
         --operator CREPEPresuppositionExtractionOperator \
         --out_dir /home/shenranw/scratch-hgonen/FP_Hallucination/out

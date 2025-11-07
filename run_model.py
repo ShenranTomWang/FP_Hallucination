@@ -4,7 +4,6 @@ import torch
 import openai
 from tqdm import tqdm
 import data_operator
-import evaluator
 import numpy as np
 
 def main(args):
