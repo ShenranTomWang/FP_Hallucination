@@ -14,9 +14,10 @@
 
 source /home/shenranw/.bashrc
 conda activate FP
+module load http_proxy
 
-export HF_HOME=/home/shenranw/scratch/tmp/transformers_cache
-export TRITON_CACHE_DIR=/home/shenranw/scratch/tmp/triton_cache
+export HF_HOME=/home/shenranw/scratch-hgonen/tmp/transformers_cache
+export TRITON_CACHE_DIR=/home/shenranw/scratch-hgonen/tmp/triton_cache
 
 cd /home/shenranw/FP_Hallucination
 python run_model.py \
