@@ -10,6 +10,10 @@ class DataOperator(ABC):
     response_cls: Response
     
     @abstractmethod
+    def align_responses(self, dp: dict, **kwargs) -> dict:
+        pass
+
+    @abstractmethod
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         pass
     

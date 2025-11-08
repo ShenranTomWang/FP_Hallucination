@@ -1,4 +1,4 @@
 from .evaluator import Evaluator
-from .CREPE_evaluator import CREPEEvaluator
+from .CREPE_evaluator import CREPEPresuppositionExtractionEvaluator
 
-__all__ = ['Evaluator', 'CREPEEvaluator']
+__all__ = ['Evaluator', 'CREPEPresuppositionExtractionEvaluator']

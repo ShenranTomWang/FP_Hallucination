@@ -1,5 +1,5 @@
 from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate
-from evaluator import CREPEEvaluator
+from evaluator import CREPEPresuppositionExtractionEvaluator
 from .data_operator import DataOperator
 from data_gen.data_loader import instantiate_dataloader
 import random, os
@@ -9,13 +9,14 @@ from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionR
 import torch
 from typing import List
 from pydantic import BaseModel
+from evaluator.utils import bert_score_f1
 
 class CREPEOperator(DataOperator):
     transformer_model: outlines.models.Transformers = None
     answer_key: str
 
     def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
-        evaluator = CREPEEvaluator(**eval_dp, model_answer=[eval_dp[self.answer_key]])
+        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=[eval_dp[self.answer_key]])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bleurt:
@@ -80,6 +81,25 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.response_cls = CREPEPresuppositionExtractionResponse
         self.answer_key = "model_detected_presuppositions"
 
+    def align_response(self, dp: dict, **kwargs) -> dict:
+        presuppositions_gt = dp['presuppositions'] + dp['raw_presuppositions']
+        presuppositions = dp.get(self.answer_key, [])
+        if len(presuppositions) == 0 or len(presuppositions_gt) == 0:
+            return dp
+        aligned_map = dict()
+        for p_gt in presuppositions_gt:
+            best_p = None
+            best_score = -1
+            for p in presuppositions:
+                score = bert_score_f1([p_gt], [p])
+                if score > best_score:
+                    best_score = score
+                    best_p = p
+            if best_p is not None:
+                aligned_map[p_gt] = best_p
+        dp[self.answer_key] = list(aligned_map.values())
+        return dp
+
     def add_data_module(self, file_dir: str = 'dataset', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir)
 
@@ -104,6 +124,9 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         self.dataloader = None
         self.response_cls = CREPEFeedbackActionResponse
         self.answer_key = "model_feedback_action"
+        
+    def align_response(self, dp: dict, **kwargs) -> dict:
+        return dp
 
     def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)

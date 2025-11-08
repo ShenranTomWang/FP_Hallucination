@@ -67,7 +67,7 @@ def bleurt_score(
     else:
         return max(scores)
 
-def bert_score(
+def bert_score_f1(
     candidates: List[str],
     references: List[str]
 ) -> float:

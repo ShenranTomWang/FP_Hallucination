@@ -20,6 +20,9 @@ def main(args):
     if args.command == 'evaluate':
         run_evaluate(args, operator)
         return
+    elif args.command == 'align_responses':
+        run_align_responses(args, operator)
+        return
 
     if args.dataset_dir is None:
         operator.add_data_module(model_name=args.model)
@@ -64,6 +67,15 @@ def run_evaluate(args, operator: data_operator.DataOperator):
         k = args.show_top_bottom_k
         for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if args.run_bleurt else []):
             operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file))
+
+def run_align_responses(args, operator: data_operator.DataOperator):
+    with open(args.file, 'r') as f:
+        data = [json.loads(line.strip()) for line in f]
+    for dp in tqdm(data, desc='Aligning responses'):
+        dp = operator.align_response(dp)
+    with open(args.file, 'w') as f:
+        for dp in data:
+            f.write(json.dumps(dp) + '\n')
 
 def run_openai_model_check(args, dataset: list, operator: data_operator.DataOperator):
     result_file_name = f"tmp/openai_results_{operator.dataloader.dataset_name}_{operator.action_name}.jsonl"
@@ -193,6 +205,10 @@ if __name__ == '__main__':
     openai_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
     openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
+    
+    align_responses_parser = model_subparsers.add_parser('align_responses', help='Align model responses with original dataset GT answers')
+    align_responses_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to align')
+    align_responses_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for alignment')
     
     evaluate_parser = model_subparsers.add_parser('evaluate', help='Evaluate model outputs using specified operator')
     evaluate_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')
