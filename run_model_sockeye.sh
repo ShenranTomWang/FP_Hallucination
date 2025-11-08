@@ -25,3 +25,8 @@ python run_model.py \
         --model /scratch/st-hgonen-1/shenranw/models/Qwen2.5-1.5B-Instruct \
         --operator CREPEPresuppositionExtractionOperator \
         --out_dir /home/shenranw/scratch-hgonen/FP_Hallucination/out
+
+python run_model.py \
+    align_responses \
+    --file /home/shenranw/scratch-hgonen/FP_Hallucination/out/curated_dataset_Qwen2.5-1.5B-Instruct.jsonl \
+    --operator CREPEPresuppositionExtractionOperator
