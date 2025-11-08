@@ -10,7 +10,7 @@ class DataOperator(ABC):
     response_cls: Response
     
     @abstractmethod
-    def align_responses(self, dp: dict, **kwargs) -> dict:
+    def align_response(self, dp: dict, **kwargs) -> dict:
         pass
 
     @abstractmethod
