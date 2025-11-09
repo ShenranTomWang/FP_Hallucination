@@ -5,7 +5,7 @@ from ignite.metrics import RougeL, RougeN
 
 __CACHE__ = {
     "bleurt_models": None,
-    "bert_scorer": None
+    "bert_scorer": {}
 }
 
 def default_tok(s: str) -> List[str]:
