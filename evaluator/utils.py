@@ -69,14 +69,15 @@ def bleurt_score(
 
 def bert_score_f1(
     candidates: List[str],
-    references: List[str]
+    references: List[str],
+    model_type: str = None
 ) -> float:
     """
     Compute BERTScore F1 for lists of candidates and references.
     """
-    bert_scorer = __CACHE__.get("bert_scorer")
+    bert_scorer = __CACHE__.get("bert_scorer", {}).get(model_type, None)
     if bert_scorer is None:
-        bert_scorer = BERTScorer(lang="en", rescale_with_baseline=True)
-        __CACHE__["bert_scorer"] = bert_scorer
+        bert_scorer = BERTScorer(model_type=model_type, lang="en", rescale_with_baseline=True)
+        __CACHE__["bert_scorer"][model_type] = bert_scorer
     _, _, F1 = bert_scorer.score(candidates, references)
     return F1.mean()

@@ -209,6 +209,7 @@ if __name__ == '__main__':
     align_responses_parser = model_subparsers.add_parser('align_responses', help='Align model responses with original dataset GT answers')
     align_responses_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to align')
     align_responses_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for alignment')
+    align_responses_parser.add_argument('--model_type', type=str, default=None, help='Model type for BERTScore computation during alignment')
     
     evaluate_parser = model_subparsers.add_parser('evaluate', help='Evaluate model outputs using specified operator')
     evaluate_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')

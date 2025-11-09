@@ -81,7 +81,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.response_cls = CREPEPresuppositionExtractionResponse
         self.answer_key = "model_detected_presuppositions"
 
-    def align_response(self, dp: dict, **kwargs) -> dict:
+    def align_response(self, dp: dict, model_type: str = None, **kwargs) -> dict:
         presuppositions_gt = dp['presuppositions'] + dp['raw_presuppositions']
         presuppositions = dp.get(self.answer_key, [])
         if len(presuppositions) == 0 or len(presuppositions_gt) == 0:
@@ -91,7 +91,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
             best_p = None
             best_score = -1
             for p in presuppositions:
-                score = bert_score_f1([p_gt], [p])
+                score = bert_score_f1([p_gt], [p], model_type=model_type)
                 if score > best_score:
                     best_score = score
                     best_p = p

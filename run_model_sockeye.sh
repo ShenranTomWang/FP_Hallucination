@@ -30,4 +30,5 @@ python run_model.py \
 python run_model.py \
     align_responses \
     --file /home/shenranw/scratch-hgonen/FP_Hallucination/out/curated_dataset_Qwen2.5-1.5B-Instruct.jsonl \
-    --operator CREPEPresuppositionExtractionOperator
+    --operator CREPEPresuppositionExtractionOperator \
+    --model_type /home/shenranw/scratch-hgonen/models/roberta-large
