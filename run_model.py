@@ -72,7 +72,7 @@ def run_align_responses(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
     for dp in tqdm(data, desc='Aligning responses'):
-        dp = operator.align_response(dp)
+        dp = operator.align_response(dp, model_type=args.model_type)
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
