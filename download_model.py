@@ -3,7 +3,7 @@ import argparse, os
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--model_name', type=str, required=True, help='Name of the model to download from Hugging Face Hub')
-argparser.add_argument('--directory', type=str, default='/scratch/st-hgonen-1/shenranw/models', help='Local directory to save the downloaded model file')
+argparser.add_argument('--directory', type=str, default=os.getenv('HF_HOME'), help='Local directory to save the downloaded model file')
 args = argparser.parse_args()
 
 full_path = os.path.join(args.directory, args.model_name.split('/')[-1])
