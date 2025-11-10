@@ -83,7 +83,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
 
     def align_response(self, dp: dict, model_type: str = None, **kwargs) -> dict:
         presuppositions_gt = dp['presuppositions'] + dp['raw_presuppositions']
-        presuppositions = dp.get(self.answer_key, [])
+        presuppositions = dp.get(self.answer_key, {}).get('presuppositions', [])
         if len(presuppositions) == 0 or len(presuppositions_gt) == 0:
             return dp
         aligned_map = dict()
