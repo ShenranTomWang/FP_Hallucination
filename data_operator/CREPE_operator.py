@@ -97,7 +97,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
                     best_p = p
             if best_p is not None:
                 aligned_map[p_gt] = best_p
-        dp[self.answer_key] = list(aligned_map.values())
+        dp['model_detected_presuppositions_aligned'] = list(aligned_map.values())
         return dp
 
     def add_data_module(self, file_dir: str = 'dataset', **kwargs):
