@@ -49,7 +49,7 @@ def run_evaluate(args, operator: data_operator.DataOperator):
             if args.run_bleurt:
                 dp['bleurt_f1'] = 0
             continue
-        dp['rouge1_f1'], dp['rougeL_f1'], bleurt_f1 = operator.evaluate(dp, run_bleurt=args.run_bleurt)
+        dp['rouge1_f1'], dp['rougeL_f1'], bleurt_f1 = operator.evaluate(dp, run_bleurt=args.run_bleurt, use_aligned=args.use_aligned)
         if args.run_bleurt:
             dp['bleurt_f1'] = bleurt_f1
     with open(args.file, 'w') as f:
@@ -66,7 +66,7 @@ def run_evaluate(args, operator: data_operator.DataOperator):
     if args.show_top_bottom_k > 0:
         k = args.show_top_bottom_k
         for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if args.run_bleurt else []):
-            operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file))
+            operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file), use_aligned=args.use_aligned)
 
 def run_align_responses(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
@@ -216,6 +216,7 @@ if __name__ == '__main__':
     evaluate_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for evaluation')
     evaluate_parser.add_argument('--run_bleurt', action='store_true', help='Whether to run BLEURT evaluation (may be slow)')
     evaluate_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
+    evaluate_parser.add_argument('--use_aligned', action='store_true', help='Whether to use aligned model responses for evaluation')
     
     args = parser.parse_args()
 

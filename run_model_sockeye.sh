@@ -32,3 +32,10 @@ python run_model.py \
     --file /home/shenranw/scratch-hgonen/FP_Hallucination/out/curated_dataset_Qwen2.5-1.5B-Instruct.jsonl \
     --operator CREPEPresuppositionExtractionOperator \
     --model_type /home/shenranw/scratch-hgonen/models/roberta-large
+    
+python run_model.py \
+    evaluate \
+    --file out/curated_dataset_Qwen2.5-1.5B-Instruct.jsonl \
+    --operator CREPEPresuppositionExtractionOperator \
+    --show_top_bottom_k 20 \
+    --use_aligned

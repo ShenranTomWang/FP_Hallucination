@@ -55,7 +55,7 @@ class DataOperator(ABC):
         pass
 
     @abstractmethod
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str):
+    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool):
         """Save the top and bottom k data points based on a specific score.
 
         Args:
@@ -63,5 +63,6 @@ class DataOperator(ABC):
             score_key (str): The key to use for scoring, one of 'rouge1_f1', 'rougeL_f1', 'bleurt_f1'.
             k (int): The number of top/bottom entries to save.
             out_dir (str): The directory to save the results.
+            use_aligned (bool): Whether to use aligned responses for evaluation.
         """
         pass

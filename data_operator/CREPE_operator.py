@@ -15,8 +15,11 @@ class CREPEOperator(DataOperator):
     transformer_model: outlines.models.Transformers = None
     answer_key: str
 
-    def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
-        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=[eval_dp[self.answer_key]])
+    def evaluate(self, eval_dp: dict, run_bleurt: bool, use_aligned: bool) -> tuple:
+        key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
+        if eval_dp.get(key) is None:
+            return 0.0, 0.0, 0.0
+        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=eval_dp[key])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bleurt:
@@ -54,24 +57,27 @@ class CREPEOperator(DataOperator):
         response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
         return self.response_cls.model_validate_json(response)
 
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str):
+    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool):
+        key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
         sorted_data = sorted(
-            [dp for dp in data if dp.get(self.answer_key) is not None and dp.get(score_key) is not None],
+            [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
             key=lambda x: x[score_key]
         )
         with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[-k:]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
                 f.write(f'Question: {dp["question"]}\n')
+                f.write(f'Comment: {dp.get("comment", "")}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
-                f.write(f'Model Answer: {dp[self.answer_key]}\n')
+                f.write(f'Model Answer: {dp[key]}\n')
                 f.write('-' * 20 + '\n\n')
         with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[:k]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
                 f.write(f'Question: {dp["question"]}\n')
+                f.write(f'Comment: {dp.get("comment", "")}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
-                f.write(f'Model Answer: {dp[self.answer_key]}\n')
+                f.write(f'Model Answer: {dp[key]}\n')
                 f.write('-' * 20 + '\n\n')
 
 class CREPEPresuppositionExtractionOperator(CREPEOperator):
