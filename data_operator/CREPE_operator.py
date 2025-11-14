@@ -69,7 +69,9 @@ class CREPEOperator(DataOperator):
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'Comment: {dp.get("comment", "")}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
-                f.write(f'Model Answer: {dp[key]}\n')
+                if use_aligned:
+                    f.write(f'Model Answer (Aligned): {dp[key]}\n')
+                f.write(f'Model Answer: {dp[self.answer_key]}\n')
                 f.write('-' * 20 + '\n\n')
         with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[:k]:
@@ -77,7 +79,9 @@ class CREPEOperator(DataOperator):
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'Comment: {dp.get("comment", "")}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
-                f.write(f'Model Answer: {dp[key]}\n')
+                if use_aligned:
+                    f.write(f'Model Answer (Aligned): {dp[key]}\n')
+                f.write(f'Model Answer: {dp[self.answer_key]}\n')
                 f.write('-' * 20 + '\n\n')
 
 class CREPEPresuppositionExtractionOperator(CREPEOperator):

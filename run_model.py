@@ -42,7 +42,7 @@ def main(args):
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
-    for i, dp in tqdm(enumerate(data), desc='Evaluating'):
+    for dp in tqdm(data, desc='Evaluating'):
         if dp.get(operator.answer_key) is None:
             dp['rouge1_f1'] = 0
             dp['rougeL_f1'] = 0
