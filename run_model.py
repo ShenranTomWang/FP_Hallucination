@@ -108,7 +108,7 @@ def run_openai_model_check(args, dataset: list, operator: data_operator.DataOper
 def run_transformers_model(args, dataset: list, operator: data_operator.DataOperator):
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torch_dtype=args.dtype,
+        dtype=args.dtype,
         device_map=args.device
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model)
