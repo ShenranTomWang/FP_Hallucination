@@ -8,7 +8,7 @@
 source /ubc/cs/home/s/shenranw/.bashrc
 
 cd /ubc/cs/home/s/shenranw/FP_Hallucination
-source .venv/bin/activate
+source ../scratch/envs/FP_Hallucination/.venv/bin/activate
 
 python run_model.py \
     transformers \
