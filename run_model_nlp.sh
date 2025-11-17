@@ -6,9 +6,10 @@
 #SBATCH --partition=nlpgpo
 
 source /ubc/cs/home/s/shenranw/.bashrc
-source .venv/bin/activate
 
 cd /ubc/cs/home/s/shenranw/FP_Hallucination
+source .venv/bin/activate
+
 python run_model.py \
     transformers \
         --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
@@ -21,3 +22,10 @@ python run_model.py \
     --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_Qwen2.5-7B-Instruct.jsonl \
     --operator CREPEPresuppositionExtractionOperator \
     --model_type ${HF_HOME}/roberta-large
+
+python run_model.py \
+    evaluate \
+    --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_Qwen2.5-7B-Instruct.jsonl \
+    --operator CREPEPresuppositionExtractionOperator \
+    --show_top_bottom_k 20 \
+    --use_aligned
