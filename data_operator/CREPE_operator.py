@@ -19,7 +19,7 @@ class CREPEOperator(DataOperator):
         key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
         if eval_dp.get(key) is None:
             return 0.0, 0.0, 0.0
-        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=eval_dp[key])
+        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=eval_dp[key], use_aligned=use_aligned)
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bleurt:
