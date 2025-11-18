@@ -27,9 +27,9 @@ class CREPEPresuppositionExtractionTemplate(Template):
             {
                 "role": system_role,
                 "content": f"""
-                    You are a helpful assistant that analyzes the following question.
-                    Your task is to extract assumptions implicit in a given question.
-                    You must notice that considering the intention of the question will be helpful to extract a hidden assumption of the given question.
+                    You are a helpful assistant that analyzes the given question.
+                    Your task is to extract presuppositions in the given question.
+                    Format your response as a JSON object with a single key "presuppositions" whose value is a list of presuppositions.
                 """
             },
             *few_shot,
