@@ -30,7 +30,8 @@ class CREPEPresuppositionExtractionTemplate(Template):
                     You are a helpful assistant that analyzes the following question.
                     Your task is to extract assumptions implicit in a given question.
                     You must notice that considering the intention of the question will be helpful to extract a hidden assumption of the given question.
-                """},
+                """
+            },
             *few_shot,
             {"role": "user", "content": self.question}
         ]

@@ -8,37 +8,30 @@ __CACHE__ = {
     "bert_scorer": {}
 }
 
-def default_tok(s: str) -> List[str]:
-    return s.lower().strip().split()
-
 def f1(prec: float, rec: float, eps: float = 1e-12) -> float:
     return 2 * prec * rec / (prec + rec + eps)
 
 def rouge1_f1(
     candidate: str,
     references: Iterable[str],
-    tok: Callable[[str], List[str]] = default_tok
 ) -> float:
     """
     ROUGE-1 F1 over possibly multiple references (take the best ref).
     """
     m = RougeN(ngram=1, multiref='best')
-    c_tokens = tok(candidate)
-    m.update(([c_tokens], [tok(r) for r in references]))
+    m.update(([c_tokens.split()], [r.split() for r in references]))
     return m.compute()['Rouge-1-F']
 
 def rougeL_f1(
     candidate: str,
-    references: Iterable[str],
-    tok: Callable[[str], List[str]] = default_tok
+    references: Iterable[str]
 ) -> float:
     """
     ROUGE-L F1 using Lin (2004) LCS-based precision/recall.
     Multiple refs: take the best ref.
     """
-    c_tokens = tok(candidate)
     m = RougeL(multiref='best')
-    m.update(([c_tokens], [tok(r) for r in references]))
+    m.update(([candidate.split()], [r.split() for r in references]))
     return m.compute()['Rouge-L-F']
 
 def bleurt_score(
