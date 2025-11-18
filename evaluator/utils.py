@@ -19,7 +19,7 @@ def rouge1_f1(
     ROUGE-1 F1 over possibly multiple references (take the best ref).
     """
     m = RougeN(ngram=1, multiref='best')
-    m.update(([c_tokens.split()], [r.split() for r in references]))
+    m.update(([candidate.split()], [[r.split() for r in references]]))
     return m.compute()['Rouge-1-F']
 
 def rougeL_f1(
@@ -31,7 +31,7 @@ def rougeL_f1(
     Multiple refs: take the best ref.
     """
     m = RougeL(multiref='best')
-    m.update(([candidate.split()], [r.split() for r in references]))
+    m.update(([candidate.split()], [[r.split() for r in references]]))
     return m.compute()['Rouge-L-F']
 
 def bleurt_score(
