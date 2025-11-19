@@ -66,6 +66,7 @@ class CREPEOperator(DataOperator):
         with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[-k:]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
+                f.write(f'id: {dp["id"]}\n')
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'Comment: {dp.get("comment", "")}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
@@ -76,6 +77,7 @@ class CREPEOperator(DataOperator):
         with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[:k]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
+                f.write(f'id: {dp["id"]}\n')
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'Comment: {dp.get("comment", "")}\n')
                 f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
