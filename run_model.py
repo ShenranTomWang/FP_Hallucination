@@ -4,6 +4,7 @@ import torch
 import openai
 from tqdm import tqdm
 import data_operator
+from data_gen.data_loader import instantiate_dataloader
 import numpy as np
 
 def main(args):
@@ -20,6 +21,9 @@ def main(args):
     if args.command == 'evaluate':
         run_evaluate(args, operator)
         return
+    elif args.command == 'print_examples':
+        run_print_examples(args)
+        return
     elif args.command == 'align_responses':
         run_align_responses(args, operator)
         return
@@ -28,7 +32,7 @@ def main(args):
         operator.add_data_module(model_name=args.model)
     else:
         operator.add_data_module(file_dir=args.dataset_dir, model_name=args.model)
-    dataset_full = operator.load_data(split=args.split, k = args.k if hasattr(args, 'k') else 0)
+    dataset_full = operator.load_data(split=args.split, k=args.k if hasattr(args, 'k') else None)
     dataset = dataset_full[args.start_idx:]
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
@@ -38,6 +42,16 @@ def main(args):
         run_openai_model(args, dataset, operator)
     elif args.command == 'openai_check':
         run_openai_model_check(args, dataset, operator)
+        
+def run_print_examples(args):
+    dataset = instantiate_dataloader(args.dataset, args.dataset_dir).load_data(args.split)
+    with open(os.path.join(args.out_dir, 'printed_examples.txt'), 'w') as f:
+        for dp in dataset[:args.k]:
+            f.write(f'ID: {dp["id"]}\n')
+            f.write(f'Question: {dp["question"]}\n')
+            f.write(f'Comment: {dp["comment"]}\n')
+            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
+            f.write('-' * 40 + '\n')
 
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
@@ -178,7 +192,7 @@ if __name__ == '__main__':
     transformers_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     transformers_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     transformers_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
-    transformers_parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
+    transformers_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     transformers_parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
     transformers_parser.add_argument('--dtype', type=str, default='bfloat16', help='Data type for model parameters')
     transformers_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
@@ -192,7 +206,7 @@ if __name__ == '__main__':
     openai_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     openai_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
-    openai_parser.add_argument('--k', type=int, default=4, help='Number of few-shot examples to use for presupposition extraction')
+    openai_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     openai_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     openai_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     
@@ -217,6 +231,13 @@ if __name__ == '__main__':
     evaluate_parser.add_argument('--run_bleurt', action='store_true', help='Whether to run BLEURT evaluation (may be slow)')
     evaluate_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
     evaluate_parser.add_argument('--use_aligned', action='store_true', help='Whether to use aligned model responses for evaluation')
+    
+    print_parser = model_subparsers.add_parser('print_examples', help='Print examples from dataset')
+    print_parser.add_argument('--dataset', type=str, required=True, help='Dataset name to use for printing examples')
+    print_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
+    print_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    print_parser.add_argument('--k', type=int, default=5, help='Number of examples to print')
+    print_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the printed examples')
     
     args = parser.parse_args()
 

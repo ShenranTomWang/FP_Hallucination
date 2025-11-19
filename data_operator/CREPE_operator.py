@@ -1,3 +1,4 @@
+import json
 from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate
 from evaluator import CREPEPresuppositionExtractionEvaluator
 from .data_operator import DataOperator
@@ -57,13 +58,13 @@ class CREPEOperator(DataOperator):
         response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
         return self.response_cls.model_validate_json(response)
 
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool):
+    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool, fname: str = 'top_{}_{}_{}.txt'):
         key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
         sorted_data = sorted(
             [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
             key=lambda x: x[score_key]
         )
-        with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+        with open(os.path.join(out_dir, fname.format(k, score_key, self.action_name)), 'w') as f:
             for dp in sorted_data[-k:]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
                 f.write(f'id: {dp["id"]}\n')
@@ -115,15 +116,20 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def add_data_module(self, file_dir: str = 'dataset', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir)
 
-    def load_data(self, split: str, k: int, **kwargs):
+    def load_data(self, split: str, k: int = None, **kwargs):
         dataset = self.dataloader.load_data(split=split)
-        if dataset[0].get('few_shot_data') is None:
-            few_shot_data = self.dataloader.load_data(split='train')
-            few_shot_data = [data for data in few_shot_data if len(data['presuppositions']) != 0]
+        few_shot_ids = []
+        with open(os.path.join('FP_Hallucination', 'data_gen', 'CREPE', 'few_shot_data', 'few_shot.jsonl'), 'r') as f:
+            for line in f:
+                few_shot_id = json.loads(line.strip())['id']
+                few_shot_ids.append(few_shot_id)
+        few_shot_data = self.dataloader.load_data(split='train')
+        few_shot_data = [data for data in few_shot_data if data['id'] in few_shot_ids]
+        if k:
             few_shot_data = random.sample(few_shot_data, k)
-            for data in dataset:
-                data['few_shot_data'] = few_shot_data
-            self.dataloader.save_data(dataset, split=split)
+        for data in dataset:
+            data['few_shot_data'] = few_shot_data
+        self.dataloader.save_data(dataset, split=split)
         return self.dataloader.load_data(split)
 
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
