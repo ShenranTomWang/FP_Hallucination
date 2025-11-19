@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate
 from evaluator import CREPEPresuppositionExtractionEvaluator
 from .data_operator import DataOperator
@@ -119,7 +120,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def load_data(self, split: str, k: int = None, **kwargs):
         dataset = self.dataloader.load_data(split=split)
         few_shot_ids = []
-        with open(os.path.join('FP_Hallucination', 'data_gen', 'CREPE', 'few_shot_data', 'few_shot.jsonl'), 'r') as f:
+        with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
             for line in f:
                 few_shot_id = json.loads(line.strip())['id']
                 few_shot_ids.append(few_shot_id)
