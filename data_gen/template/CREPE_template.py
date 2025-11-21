@@ -3,9 +3,9 @@ from typing import List
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse
 
 class PresuppositionExtractionFewShotExample(Template):
-    def __init__(self, question: str, presuppositions: List[str], **kwargs):
+    def __init__(self, question: str, raw_presuppositions: List[str], **kwargs):
         self.question = question
-        self.presuppositions = presuppositions
+        self.presuppositions = raw_presuppositions
 
     def generate(self, **kwargs):
         content = f"""
