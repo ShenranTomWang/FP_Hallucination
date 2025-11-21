@@ -30,6 +30,7 @@ class CREPEPresuppositionExtractionTemplate(Template):
                     You are a helpful assistant that analyzes the given question.
                     Your task is to extract presuppositions in the given question.
                     Notice that the presuppositions in a question could be true or false, and may be explicit or implicit.
+                    There could be multiple presuppositions in a question, but there will always be at least one presupposition in the question.
                     Format your response as a JSON object with a single key "presuppositions" whose value is a list of presuppositions.
                 """
             },
