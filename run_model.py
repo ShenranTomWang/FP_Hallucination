@@ -62,10 +62,14 @@ def run_evaluate(args, operator: data_operator.DataOperator):
             dp['rougeL_f1'] = 0
             if args.run_bleurt:
                 dp['bleurt_f1'] = 0
+            if args.run_bert_score:
+                dp['bert_score_f1'] = 0
             continue
-        dp['rouge1_f1'], dp['rougeL_f1'], bleurt_f1 = operator.evaluate(dp, run_bleurt=args.run_bleurt, use_aligned=args.use_aligned)
+        dp['rouge1_f1'], dp['rougeL_f1'], bleurt_f1, bert_score_f1 = operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, use_aligned=args.use_aligned)
         if args.run_bleurt:
             dp['bleurt_f1'] = bleurt_f1
+        if args.run_bert_score:
+            dp['bert_score_f1'] = bert_score_f1
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
@@ -76,10 +80,13 @@ def run_evaluate(args, operator: data_operator.DataOperator):
     if args.run_bleurt:
         avg_bleurt = np.mean([dp['bleurt_f1'] for dp in data if dp.get('bleurt_f1') is not None])
         print(f'Average BLEURT F1: {avg_bleurt:.4f}')
+    if args.run_bert_score:
+        avg_bert_score = np.mean([dp['bert_score_f1'] for dp in data if dp.get('bert_score_f1') is not None])
+        print(f'Average BERTScore F1: {avg_bert_score:.4f}')
     
     if args.show_top_bottom_k > 0:
         k = args.show_top_bottom_k
-        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if args.run_bleurt else []):
+        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if args.run_bleurt else []) + (['bert_score_f1'] if args.run_bert_score else []):
             operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file), use_aligned=args.use_aligned)
 
 def run_align_responses(args, operator: data_operator.DataOperator):
@@ -229,6 +236,7 @@ if __name__ == '__main__':
     evaluate_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')
     evaluate_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for evaluation')
     evaluate_parser.add_argument('--run_bleurt', action='store_true', help='Whether to run BLEURT evaluation (may be slow)')
+    evaluate_parser.add_argument('--run_bert_score', action='store_true', help='Whether to run BERTScore evaluation (may be slow)')
     evaluate_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
     evaluate_parser.add_argument('--use_aligned', action='store_true', help='Whether to use aligned model responses for evaluation')
     

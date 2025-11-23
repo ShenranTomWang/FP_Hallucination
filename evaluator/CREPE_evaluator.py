@@ -37,7 +37,7 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         if self.use_aligned:
             bleurt_score_f1s = []
             for i, answer in enumerate(self.model_answer):
-                bleurt_score_f1s.append(bleurt_score(answer, [self.raw_presuppositions[i]]))
+                bleurt_score_f1s.append(bleurt_score([answer], [self.raw_presuppositions[i]]))
             return max(bleurt_score_f1s) if len(bleurt_score_f1s) > 0 else 0.0
         return bleurt_score(self.model_answer, [" ".join(self.raw_presuppositions).strip()])
 
@@ -47,6 +47,6 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         if self.use_aligned:
             bert_score_f1s = []
             for i, answer in enumerate(self.model_answer):
-                bert_score_f1s.append(bert_score_f1(answer, [self.raw_presuppositions[i]]))
+                bert_score_f1s.append(bert_score_f1([answer], [self.raw_presuppositions[i]]))
             return max(bert_score_f1s) if len(bert_score_f1s) > 0 else 0.0
         return bert_score_f1(self.model_answer, [presuppositions.strip() for presuppositions in self.raw_presuppositions])

@@ -17,17 +17,22 @@ class CREPEOperator(DataOperator):
     transformer_model: outlines.models.Transformers = None
     answer_key: str
 
-    def evaluate(self, eval_dp: dict, run_bleurt: bool, use_aligned: bool) -> tuple:
+    def evaluate(self, eval_dp: dict, run_bleurt: bool, run_bert_score: bool, use_aligned: bool) -> tuple:
         key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
         if eval_dp.get(key) is None:
-            return 0.0, 0.0, 0.0
+            return 0.0, 0.0, 0.0, 0.0
         evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=eval_dp[key], use_aligned=use_aligned)
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bleurt:
             bleurt_f1 = evaluator.evaluate_bleurt_f1()
-            return rouge1_f1, rougeL_f1, bleurt_f1
-        return rouge1_f1, rougeL_f1, None
+        else:
+            bleurt_f1 = None
+        if run_bert_score:
+            bert_score_f1 = evaluator.evaluate_bert_score_f1()
+        else:
+            bert_score_f1 = None
+        return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
 
     def message2openai_request(self, id: str, model: str, messages: List[str], **kwargs) -> dict:
         return {
@@ -66,7 +71,7 @@ class CREPEOperator(DataOperator):
             key=lambda x: x[score_key]
         )
         with open(os.path.join(out_dir, fname.format(k, score_key, self.action_name)), 'w') as f:
-            for dp in sorted_data[-k:]:
+            for dp in sorted_data[-k:][::-1]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
                 f.write(f'id: {dp["id"]}\n')
                 f.write(f'Question: {dp["question"]}\n')
