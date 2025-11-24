@@ -10,43 +10,43 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         self.use_aligned = use_aligned
     
     def evaluate_rouge1_f1(self) -> float:
-        if len(self.raw_presuppositions) == 0:
+        if len(self.presuppositions) == 0:
             return 0.0 if len(self.model_answer) == 0 else 1.0
         rouge1_f1s = []
         for i, answer in enumerate(self.model_answer):
             if self.use_aligned:
-                rouge1_f1s.append(rouge1_f1(answer, [self.raw_presuppositions[i]]))
+                rouge1_f1s.append(rouge1_f1(answer, [self.presuppositions[i]]))
             else:
-                rouge1_f1s.append(rouge1_f1(answer, [" ".join(self.raw_presuppositions).strip()]))
+                rouge1_f1s.append(rouge1_f1(answer, [" ".join(self.presuppositions).strip()]))
         return max(rouge1_f1s) if len(rouge1_f1s) > 0 else 0.0
 
     def evaluate_rougeL_f1(self) -> float:
-        if len(self.raw_presuppositions) == 0:
+        if len(self.presuppositions) == 0:
             return 0.0 if len(self.model_answer) == 0 else 1.0
         rougeL_f1s = []
         for i, answer in enumerate(self.model_answer):
             if self.use_aligned:
-                rougeL_f1s.append(rougeL_f1(answer, [self.raw_presuppositions[i]]))
+                rougeL_f1s.append(rougeL_f1(answer, [self.presuppositions[i]]))
             else:
-                rougeL_f1s.append(rougeL_f1(answer, [" ".join(self.raw_presuppositions).strip()]))
+                rougeL_f1s.append(rougeL_f1(answer, [" ".join(self.presuppositions).strip()]))
         return max(rougeL_f1s) if len(rougeL_f1s) > 0 else 0.0
 
     def evaluate_bleurt_f1(self) -> float:
-        if len(self.raw_presuppositions) == 0:
+        if len(self.presuppositions) == 0:
             return 0.0 if len(self.model_answer) == 0 else 1.0
         if self.use_aligned:
             bleurt_score_f1s = []
             for i, answer in enumerate(self.model_answer):
-                bleurt_score_f1s.append(bleurt_score([answer], [self.raw_presuppositions[i]]))
+                bleurt_score_f1s.append(bleurt_score([answer], [self.presuppositions[i]]))
             return max(bleurt_score_f1s) if len(bleurt_score_f1s) > 0 else 0.0
-        return bleurt_score(self.model_answer, [" ".join(self.raw_presuppositions).strip()])
+        return bleurt_score(self.model_answer, [" ".join(self.presuppositions).strip()])
 
     def evaluate_bert_score_f1(self) -> float:
-        if len(self.raw_presuppositions) == 0:
+        if len(self.presuppositions) == 0:
             return 0.0 if len(self.model_answer) == 0 else 1.0
         if self.use_aligned:
             bert_score_f1s = []
             for i, answer in enumerate(self.model_answer):
-                bert_score_f1s.append(bert_score_f1([answer], [self.raw_presuppositions[i]]))
+                bert_score_f1s.append(bert_score_f1([answer], [self.presuppositions[i]]))
             return max(bert_score_f1s) if len(bert_score_f1s) > 0 else 0.0
-        return bert_score_f1(self.model_answer, [presuppositions.strip() for presuppositions in self.raw_presuppositions])
+        return bert_score_f1(self.model_answer, [presuppositions.strip() for presuppositions in self.presuppositions])

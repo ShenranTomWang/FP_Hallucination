@@ -76,7 +76,7 @@ class CREPEOperator(DataOperator):
                 f.write(f'id: {dp["id"]}\n')
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'Comment: {dp.get("comment", "")}\n')
-                f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
+                f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
                 if use_aligned:
                     f.write(f'Model Answer (Aligned): {dp[key]}\n')
                 f.write(f'Model Answer: {dp[self.answer_key]}\n')
@@ -87,7 +87,7 @@ class CREPEOperator(DataOperator):
                 f.write(f'id: {dp["id"]}\n')
                 f.write(f'Question: {dp["question"]}\n')
                 f.write(f'Comment: {dp.get("comment", "")}\n')
-                f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
+                f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
                 if use_aligned:
                     f.write(f'Model Answer (Aligned): {dp[key]}\n')
                 f.write(f'Model Answer: {dp[self.answer_key]}\n')
@@ -101,9 +101,10 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.answer_key = "model_detected_presuppositions"
 
     def align_response(self, dp: dict, model_type: str = None, **kwargs) -> dict:
-        presuppositions_gt = dp['presuppositions'] + dp['raw_presuppositions']
+        presuppositions_gt = dp['presuppositions']
         presuppositions = dp.get(self.answer_key, {}).get('presuppositions', [])
         if len(presuppositions) == 0 or len(presuppositions_gt) == 0:
+            dp['model_detected_presuppositions_aligned'] = []
             return dp
         aligned_map = dict()
         for p_gt in presuppositions_gt:

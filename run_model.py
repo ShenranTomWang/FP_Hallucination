@@ -50,7 +50,7 @@ def run_print_examples(args):
             f.write(f'ID: {dp["id"]}\n')
             f.write(f'Question: {dp["question"]}\n')
             f.write(f'Comment: {dp["comment"]}\n')
-            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"] + dp["raw_presuppositions"])}\n')
+            f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
             f.write('-' * 40 + '\n')
 
 def run_evaluate(args, operator: data_operator.DataOperator):
