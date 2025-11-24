@@ -11,7 +11,7 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
     
     def evaluate_rouge1_f1(self) -> float:
         if len(self.raw_presuppositions) == 0:
-            return 0.0
+            return 0.0 if len(self.model_answer) == 0 else 1.0
         rouge1_f1s = []
         for i, answer in enumerate(self.model_answer):
             if self.use_aligned:
@@ -22,7 +22,7 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
 
     def evaluate_rougeL_f1(self) -> float:
         if len(self.raw_presuppositions) == 0:
-            return 0.0
+            return 0.0 if len(self.model_answer) == 0 else 1.0
         rougeL_f1s = []
         for i, answer in enumerate(self.model_answer):
             if self.use_aligned:
@@ -33,7 +33,7 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
 
     def evaluate_bleurt_f1(self) -> float:
         if len(self.raw_presuppositions) == 0:
-            return 0.0
+            return 0.0 if len(self.model_answer) == 0 else 1.0
         if self.use_aligned:
             bleurt_score_f1s = []
             for i, answer in enumerate(self.model_answer):
@@ -43,7 +43,7 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
 
     def evaluate_bert_score_f1(self) -> float:
         if len(self.raw_presuppositions) == 0:
-            return 0.0
+            return 0.0 if len(self.model_answer) == 0 else 1.0
         if self.use_aligned:
             bert_score_f1s = []
             for i, answer in enumerate(self.model_answer):
