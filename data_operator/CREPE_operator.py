@@ -70,6 +70,7 @@ class CREPEOperator(DataOperator):
             [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
             key=lambda x: x[score_key]
         )
+        sorted_data = [dp for dp in sorted_data if len(dp['presuppositions']) > 0]
         with open(os.path.join(out_dir, fname.format(k, score_key, self.action_name)), 'w') as f:
             for dp in sorted_data[-k:][::-1]:
                 f.write(f'{score_key}: {dp[score_key]:.4f}\n')
