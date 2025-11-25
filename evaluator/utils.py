@@ -1,4 +1,4 @@
-from typing import List, Iterable, Callable
+from typing import List, Iterable
 import evaluate
 from bert_score import BERTScorer
 from ignite.metrics import RougeL, RougeN
@@ -18,7 +18,7 @@ def rouge1_f1(
     """
     ROUGE-1 F1 over possibly multiple references (take the best ref).
     """
-    m = RougeN(ngram=1, multiref='best')
+    m = RougeN(ngram=1, multiref='best', alpha=0.5)
     m.update(([candidate.split()], [[r.split() for r in references]]))
     return m.compute()['Rouge-1-F']
 
@@ -30,7 +30,7 @@ def rougeL_f1(
     ROUGE-L F1 using Lin (2004) LCS-based precision/recall.
     Multiple refs: take the best ref.
     """
-    m = RougeL(multiref='best')
+    m = RougeL(multiref='best', alpha=0.5)
     m.update(([candidate.split()], [[r.split() for r in references]]))
     return m.compute()['Rouge-L-F']
 
