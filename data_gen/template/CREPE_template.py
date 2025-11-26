@@ -3,20 +3,22 @@ from typing import List
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse
 
 class PresuppositionExtractionFewShotExample(Template):
-    def __init__(self, question: str, raw_presuppositions: List[str], **kwargs):
+    def __init__(self, question: str, raw_presuppositions: List[str], json_format: bool, **kwargs):
         self.question = question
         self.presuppositions = raw_presuppositions
+        self.json_format = json_format
 
     def generate(self, **kwargs):
-        content = f"""
-            {CREPEPresuppositionExtractionResponse(presuppositions=self.presuppositions).model_dump_json()}\n
-        """
+        if not self.json_format:
+            content = "\n".join(self.presuppositions) + "\n"
+        else:
+            content = CREPEPresuppositionExtractionResponse(presuppositions=self.presuppositions).model_dump_json() + "\n"
         return content
         
 class CREPEPresuppositionExtractionTemplate(Template):
-    def __init__(self, question: str, few_shot_data: List[str], **kwargs):
+    def __init__(self, question: str, few_shot_data: List[str], json_format: bool, **kwargs):
         self.question = question
-        self.few_shot_data = [PresuppositionExtractionFewShotExample(**dp) for dp in few_shot_data]
+        self.few_shot_data = [PresuppositionExtractionFewShotExample(json_format=json_format, **dp) for dp in few_shot_data]
 
     def generate(self, system_role: str = "system", **kwargs):
         few_shot = []
@@ -31,7 +33,7 @@ class CREPEPresuppositionExtractionTemplate(Template):
                     Your task is to extract presuppositions in the given question.
                     Notice that the presuppositions in a question could be true or false, and may be explicit or implicit.
                     There could be multiple presuppositions in a question, but there will always be at least one presupposition in the question.
-                    Format your response as a JSON object with a single key "presuppositions" whose value is a list of presuppositions.
+                    Format your response as a list of presuppositions, separated by newlines.
                 """
             },
             *few_shot,
@@ -40,17 +42,21 @@ class CREPEPresuppositionExtractionTemplate(Template):
         return messages
     
 class FeedbackActionFewShotExample(Template):
-    def __init__(self, question: str, presuppositions: List[str], raw_corrections: str, **kwargs):
+    def __init__(self, question: str, presuppositions: List[str], raw_corrections: str, json_format: bool, **kwargs):
         self.question = question
         self.presuppositions = presuppositions
         self.raw_corrections = "; ".join(raw_corrections)
+        self.json_format = json_format
 
     def generate(self, **kwargs):
         presuppositions = self.presuppositions
         presuppositions.append("There is a clear and single answer to the question.")
-        content = f"""
-            {CREPEPresuppositionExtractionResponse(presuppositions=presuppositions).model_dump_json()}\n
-        """
+        if not self.json_format:
+            content = "\n".join(presuppositions) + "\n"
+        else:
+            content = f"""
+                {CREPEPresuppositionExtractionResponse(presuppositions=presuppositions).model_dump_json()}\n
+            """
         if self.raw_corrections != "":
             feedback = f"The question contains a false presupposition that {self.presuppositions[0]}."
             action = f"Correct the false assumptions that {self.raw_corrections} and respond based on the corrected assumption."
@@ -61,10 +67,10 @@ class FeedbackActionFewShotExample(Template):
         return content
 
 class CREPEFeedbackActionTemplate(Template):
-    def __init__(self, question: str, model_detected_presuppositions: str, few_shot_data: List[str], **kwargs):
+    def __init__(self, question: str, model_detected_presuppositions: str, few_shot_data: List[str], json_format: bool, **kwargs):
         self.question = question
         self.model_detected_presuppositions = model_detected_presuppositions
-        self.few_shot_data = [FeedbackActionFewShotExample(**dp) for dp in few_shot_data]
+        self.few_shot_data = [FeedbackActionFewShotExample(json_format=json_format, **dp) for dp in few_shot_data]
 
     def generate(self, system_role: str = "system", **kwargs):
         few_shot = []

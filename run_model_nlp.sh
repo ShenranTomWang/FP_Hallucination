@@ -16,6 +16,7 @@ python run_model.py \
     transformers \
         --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
         --model ${HF_HOME}/${MODEL} \
+        --split dev \
         --operator CREPEPresuppositionExtractionOperator \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out
 

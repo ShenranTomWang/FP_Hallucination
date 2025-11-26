@@ -16,6 +16,8 @@ from evaluator.utils import bert_score_f1
 class CREPEOperator(DataOperator):
     transformer_model: outlines.models.Transformers = None
     answer_key: str
+    response_cls: Response
+    action_name: str
 
     def evaluate(self, eval_dp: dict, run_bleurt: bool, run_bert_score: bool, use_aligned: bool) -> tuple:
         key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
@@ -54,15 +56,24 @@ class CREPEOperator(DataOperator):
         save_dp[self.answer_key] = response.model_dump()
         return save_dp
 
-    def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, **kwargs) -> Response:
-        if not self.transformer_model:
-            self.transformer_model = outlines.from_transformers(
-                model, tokenizer
-            )
-        prompt = tokenizer.apply_chat_template(messages)
-        prompt = tokenizer.decode(prompt)
-        response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
-        return self.response_cls.model_validate_json(response)
+    def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, json_format: bool = False, **kwargs) -> Response:
+        if json_format:
+            if not self.transformer_model:
+                self.transformer_model = outlines.from_transformers(
+                    model, tokenizer
+                )
+            prompt = tokenizer.apply_chat_template(messages)
+            prompt = tokenizer.decode(prompt)
+            response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
+            return self.response_cls.model_validate_json(response)
+        else:
+            model = model.to(device)
+            prompt = tokenizer.apply_chat_template(messages)
+            input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
+            output_ids = model.generate(input_ids, max_new_tokens=512)
+            output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+            response_text = output_text[len(prompt):].strip()
+            return self.response_cls.model_validate_plain_text(response_text)
 
     def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool, fname: str = 'top_{}_{}_{}.txt'):
         key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
@@ -140,8 +151,8 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.dataloader.save_data(dataset, split=split)
         return self.dataloader.load_data(split)
 
-    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
-        template = CREPEPresuppositionExtractionTemplate(**raw_dp, system_role=system_role)
+    def prepare_message(self, raw_dp: dict, system_role: str, json_format: bool = False, **kwargs) -> str:
+        template = CREPEPresuppositionExtractionTemplate(**raw_dp, system_role=system_role, json_format=json_format)
         return template.generate()
 
 class CREPEFeedbackActionOperator(CREPEOperator):
@@ -160,6 +171,6 @@ class CREPEFeedbackActionOperator(CREPEOperator):
     def load_data(self, **kwargs):
         return self.dataloader.load_data("CREPE_Presupposition_Extraction")
 
-    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
-        template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role)
+    def prepare_message(self, raw_dp: dict, system_role: str, json_format: bool = False, **kwargs) -> str:
+        template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role, json_format=json_format)
         return template.generate()
