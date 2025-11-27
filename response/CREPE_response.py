@@ -7,15 +7,18 @@ class CREPEResponse(Response):
 class CREPEPresuppositionExtractionResponse(CREPEResponse):
     presuppositions: List[str]
     
-    def model_validate_plain_text(self, text: str):
+    @classmethod
+    def model_validate_plain_text(cls, text: str):
+        text = text.replace("assistant\n", "")
         presuppositions = [line.strip() for line in text.split("\n")]
-        return CREPEPresuppositionExtractionResponse(presuppositions=presuppositions)
+        return cls(presuppositions=presuppositions)
     
 class CREPEFeedbackActionResponse(CREPEResponse):
     feedback: str
     action: str
     
-    def model_validate_plain_text(self, text: str):
+    @classmethod
+    def model_validate_plain_text(cls, text: str):
         lines = text.split("\n")
         feedback = ""
         action = ""
@@ -24,4 +27,4 @@ class CREPEFeedbackActionResponse(CREPEResponse):
                 feedback = line[len("Feedback:"):].strip()
             elif line.startswith("Action:"):
                 action = line[len("Action:"):].strip()
-        return CREPEFeedbackActionResponse(feedback=feedback, action=action)
+        return cls(feedback=feedback, action=action)

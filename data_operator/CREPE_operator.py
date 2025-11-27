@@ -68,12 +68,10 @@ class CREPEOperator(DataOperator):
             return self.response_cls.model_validate_json(response)
         else:
             model = model.to(device)
-            prompt = tokenizer.apply_chat_template(messages)
-            input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
-            output_ids = model.generate(input_ids, max_new_tokens=512)
+            prompt = tokenizer.apply_chat_template(messages, return_tensors='pt').to(device)
+            output_ids = model.generate(prompt, max_new_tokens=512)[:, prompt.shape[1]:]
             output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-            response_text = output_text[len(prompt):].strip()
-            return self.response_cls.model_validate_plain_text(response_text)
+            return self.response_cls.model_validate_plain_text(output_text)
 
     def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool, fname: str = 'top_{}_{}_{}.txt'):
         key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
