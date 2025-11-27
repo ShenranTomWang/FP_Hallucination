@@ -19,11 +19,11 @@ class CREPEOperator(DataOperator):
     response_cls: Response
     action_name: str
 
-    def evaluate(self, eval_dp: dict, run_bleurt: bool, run_bert_score: bool, use_aligned: bool) -> tuple:
-        key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
+    def evaluate(self, eval_dp: dict, run_bleurt: bool, run_bert_score: bool, use_aligned: str | None) -> tuple:
+        key = f'{self.answer_key}_aligned_{use_aligned}' if use_aligned else self.answer_key
         if eval_dp.get(key) is None:
             return 0.0, 0.0, 0.0, 0.0
-        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=eval_dp[key], use_aligned=use_aligned)
+        evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, model_answer=eval_dp[key], use_aligned=use_aligned is not None)
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bleurt:
@@ -73,8 +73,8 @@ class CREPEOperator(DataOperator):
             output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
             return self.response_cls.model_validate_plain_text(output_text)
 
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool, fname: str = 'top_{}_{}_{}.txt'):
-        key = f'{self.answer_key}_aligned' if use_aligned else self.answer_key
+    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: str | None, fname: str = 'top_{}_{}_{}.txt'):
+        key = f'{self.answer_key}_aligned_{use_aligned}' if use_aligned else self.answer_key
         sorted_data = sorted(
             [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
             key=lambda x: x[score_key]
@@ -114,7 +114,8 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         presuppositions_gt = dp['presuppositions']
         presuppositions = dp.get(self.answer_key, {}).get('presuppositions', [])
         if len(presuppositions) == 0 or len(presuppositions_gt) == 0:
-            dp['model_detected_presuppositions_aligned'] = []
+            dp['model_detected_presuppositions_aligned_precision'] = []
+            dp['model_detected_presuppositions_aligned_recall'] = []
             return dp
         aligned_map = dict()
         for p_gt in presuppositions_gt:
@@ -127,7 +128,18 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
                     best_p = p
             if best_p is not None:
                 aligned_map[p_gt] = best_p
-        dp['model_detected_presuppositions_aligned'] = list(aligned_map.values())
+        dp['model_detected_presuppositions_aligned_precision'] = list(aligned_map.values())
+        for p in presuppositions:
+            best_p_gt = None
+            best_score = -1
+            for p_gt in presuppositions_gt:
+                score = bert_score_f1([p_gt], [p], model_type=model_type)
+                if score > best_score:
+                    best_score = score
+                    best_p_gt = p_gt
+            if best_p_gt is not None:
+                aligned_map[best_p_gt] = p
+        dp['model_detected_presuppositions_aligned_recall'] = list(aligned_map.values())
         return dp
 
     def add_data_module(self, file_dir: str = 'dataset', **kwargs):

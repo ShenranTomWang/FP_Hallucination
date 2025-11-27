@@ -9,7 +9,7 @@ class CREPEPresuppositionExtractionResponse(CREPEResponse):
     
     @classmethod
     def model_validate_plain_text(cls, text: str):
-        text = text.replace("assistant\n", "")
+        text = text.lower().replace("assistant\n", "")
         presuppositions = [line.strip() for line in text.split("\n")]
         return cls(presuppositions=presuppositions)
     

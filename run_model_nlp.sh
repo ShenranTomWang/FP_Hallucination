@@ -31,5 +31,4 @@ python run_model.py \
     --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_${MODEL}.jsonl \
     --operator CREPEPresuppositionExtractionOperator \
     --show_top_bottom_k 20 \
-    --use_aligned \
     --run_bert_score
