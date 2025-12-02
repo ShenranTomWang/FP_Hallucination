@@ -70,7 +70,8 @@ def bert_score_f1(
     """
     bert_scorer = __CACHE__.get("bert_scorer", {}).get(model_type, None)
     if bert_scorer is None:
-        bert_scorer = BERTScorer(model_type=model_type, lang="en", rescale_with_baseline=True)
+        bert_scorer = BERTScorer(model_type=model_type, lang="en")
         __CACHE__["bert_scorer"][model_type] = bert_scorer
     _, _, F1 = bert_scorer.score(candidates, references)
+    if F1.item() < -1: breakpoint()
     return F1.mean().item()

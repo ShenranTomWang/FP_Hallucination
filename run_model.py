@@ -68,6 +68,7 @@ def _avg_report(args, data: list, measure: str):
         bert_score_key = f'bert_score_f1_{measure}'
         avg_bert_score = np.mean([dp[bert_score_key] for dp in data if dp.get(bert_score_key) is not None])
         print(f'Average BERTScore F1 {measure.capitalize()}: {avg_bert_score:.4f}')
+
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
