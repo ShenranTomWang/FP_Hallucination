@@ -25,12 +25,12 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         rouge1_f1s = []
         if self.use_aligned and self.use_aligned == 'precision':
             if len(self.presuppositions) == 0:
-                return 0.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 1.0
+                return 1.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 0.0
             for i, answer in enumerate(self.model_detected_presuppositions_aligned_precision):
                 rouge1_f1s.append(rouge1_f1(answer, [self.presuppositions[i]]))
         elif self.use_aligned and self.use_aligned == 'recall':
             if len(self.model_detected_presuppositions) == 0:
-                return 0.0 if len(self.presuppositions_aligned_recall) == 0 else 1.0
+                return 1.0 if len(self.presuppositions_aligned_recall) == 0 else 0.0
             for i, answer in enumerate(self.presuppositions_aligned_recall):
                 if len(self.model_detected_presuppositions) != len(self.presuppositions_aligned_recall):
                     breakpoint()
@@ -45,12 +45,12 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         rougeL_f1s = []
         if self.use_aligned and self.use_aligned == 'precision':
             if len(self.presuppositions) == 0:
-                return 0.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 1.0
+                return 1.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 0.0
             for i, answer in enumerate(self.model_detected_presuppositions_aligned_precision):
                 rougeL_f1s.append(rougeL_f1(answer, [self.presuppositions[i]]))
         elif self.use_aligned and self.use_aligned == 'recall':
             if len(self.model_detected_presuppositions) == 0:
-                return 0.0 if len(self.presuppositions_aligned_recall) == 0 else 1.0
+                return 1.0 if len(self.presuppositions_aligned_recall) == 0 else 0.0
             for i, answer in enumerate(self.presuppositions_aligned_recall):
                 rougeL_f1s.append(rougeL_f1(answer, [self.model_detected_presuppositions[i]]))
         else:
@@ -63,12 +63,12 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         bleurt_f1s = []
         if self.use_aligned and self.use_aligned == 'precision':
             if len(self.presuppositions) == 0:
-                return 0.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 1.0
+                return 1.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 0.0
             for i, answer in enumerate(self.model_detected_presuppositions_aligned_precision):
                 bleurt_f1s.append(bleurt_score([answer], [self.presuppositions[i]]))
         elif self.use_aligned and self.use_aligned == 'recall':
             if len(self.model_detected_presuppositions) == 0:
-                return 0.0 if len(self.presuppositions_aligned_recall) == 0 else 1.0
+                return 1.0 if len(self.presuppositions_aligned_recall) == 0 else 0.0
             for i, answer in enumerate(self.presuppositions_aligned_recall):
                 bleurt_f1s.append(bleurt_score([answer], [self.model_detected_presuppositions[i]]))
         else:
@@ -80,12 +80,12 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         bleurt_f1s = []
         if self.use_aligned and self.use_aligned == 'precision':
             if len(self.presuppositions) == 0:
-                return 0.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 1.0
+                return 1.0 if len(self.model_detected_presuppositions_aligned_precision) == 0 else 0.0
             for i, answer in enumerate(self.model_detected_presuppositions_aligned_precision):
                 bleurt_f1s.append(bert_score_f1([answer], [self.presuppositions[i]]))
         elif self.use_aligned and self.use_aligned == 'recall':
             if len(self.model_detected_presuppositions) == 0:
-                return 0.0 if len(self.presuppositions_aligned_recall) == 0 else 1.0
+                return 1.0 if len(self.presuppositions_aligned_recall) == 0 else 0.0
             for i, answer in enumerate(self.presuppositions_aligned_recall):
                 bleurt_f1s.append(bert_score_f1([answer], [self.model_detected_presuppositions[i]]))
         else:
