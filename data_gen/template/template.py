@@ -6,6 +6,23 @@ class Template(ABC):
     def generate(self, **kwargs):
         pass
     
+class DirectFPQATemplate(Template):
+    def __init__(self, question: str, **kwargs):
+        self.question = question
+        
+    def generate(self, system_role: str = "system", **kwargs):
+        messages = [
+            {
+                "role": system_role,
+                "content": f"""
+                    You are a helpful assistant that answer questions based on your knowledge.
+                    The user will ask a question, and you need to provide the answer to that question.
+                """
+            },
+            {"role": "user", "content": self.question}
+        ]
+        return messages
+    
 class PresuppositionExtractionFewShotExample(Template):
     def __init__(self, question: str, presuppositions: List[str], **kwargs):
         self.question = question
