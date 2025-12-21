@@ -20,6 +20,8 @@ class DataLoader(ABC):
             'dev': '{}/CREPE/dev.jsonl',
             'test': '{}/CREPE/test.jsonl',
             'CREPE_Presupposition_Extraction': '{}/curated_dataset_{}_CREPE_Presupposition_Extraction.jsonl',
+            'CREPE_Feedback_Action': '{}/curated_dataset_{}_CREPE_Feedback_Action.jsonl',
+            'few_shot_data': ''     # TODO: migrate loading few shot data here
         }
     }
     
@@ -30,8 +32,14 @@ class DataLoader(ABC):
 
     def load_data(self, split: str = None) -> list[dict]:
         data = []
-        if split and split != 'CREPE_Presupposition_Extraction':
+        if split and split != 'CREPE_Presupposition_Extraction' and split != 'CREPE_Feedback_Action':
             split_path = self.datasetname2path[self.dataset_name][split].format(self.file_dir)
+            with open(split_path, 'r') as f:
+                for line in f:
+                    data.append(json.loads(line))
+            return data
+        elif split == 'CREPE_Feedback_Action':
+            split_path = self.datasetname2path[self.dataset_name][split].format(self.file_dir, self.model_name)
             with open(split_path, 'r') as f:
                 for line in f:
                     data.append(json.loads(line))

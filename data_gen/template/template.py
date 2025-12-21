@@ -1,53 +1,44 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Dict
 
 class Template(ABC):
     @abstractmethod
-    def generate(self, **kwargs):
+    def generate(self, **kwargs) -> str | List[Dict]:
         pass
-    
-class DirectFPQATemplate(Template):
-    def __init__(self, question: str, **kwargs):
-        self.question = question
-        
-    def generate(self, system_role: str = "system", **kwargs):
-        messages = [
-            {
-                "role": system_role,
-                "content": f"""
-                    You are a helpful assistant that answer questions based on your knowledge.
-                    The user will ask a question, and you need to provide the answer to that question.
-                """
-            },
-            {"role": "user", "content": self.question}
-        ]
-        return messages
     
 class PresuppositionExtractionFewShotExample(Template):
     def __init__(self, question: str, presuppositions: List[str], **kwargs):
         self.question = question
         self.presuppositions = presuppositions
 
-    def generate(self, **kwargs):
+    def generate(self, **kwargs) -> List[Dict]:
         content = "\n".join(self.presuppositions) + "\n"
-        return content
+        return [
+            {
+                "role": "user",
+                "content": self.question
+            },
+            {
+                "role": "assistant",
+                "content": content
+            }
+        ]
 
 class PresuppositionExtractionTemplate(ABC, Template):
     question: str
     few_shot_data: List[PresuppositionExtractionFewShotExample]
     
-    def __init__(self, question: str, few_shot_data: List[dict], **kwargs):
+    def __init__(self, question: str, few_shot_data: List[Dict], system_role: str = "system", **kwargs):
         self.question = question
-        self.few_shot_data = [PresuppositionExtractionFewShotExample(**dp) for dp in few_shot_data]
+        self.system_role = system_role
+        self.few_shot_data = []
+        for dp in few_shot_data:
+            self.few_shot_data += PresuppositionExtractionFewShotExample(**dp).generate()
     
-    def generate(self, system_role: str = "system", **kwargs):
-        few_shot = []
-        for dp in self.few_shot_data:
-            few_shot.append({"role": "user", "content": dp.question})
-            few_shot.append({"role": "assistant", "content": dp.generate()})
+    def generate(self, **kwargs) -> List[Dict]:
         messages = [
             {
-                "role": system_role,
+                "role": self.system_role,
                 "content": f"""
                     You are a helpful assistant that analyzes the given question.
                     Your task is to extract presuppositions in the given question.
@@ -56,7 +47,7 @@ class PresuppositionExtractionTemplate(ABC, Template):
                     Format your response as a list of presuppositions, separated by newlines.
                 """
             },
-            *few_shot,
+            *self.few_shot_data,
             {"role": "user", "content": self.question}
         ]
         return messages
@@ -67,39 +58,93 @@ class FeedbackActionFewShotExample(Template):
         self.presuppositions = presuppositions
         self.raw_corrections = "; ".join(raw_corrections)
 
-    def generate(self, **kwargs):
+    def generate(self, **kwargs) -> List[Dict]:
         presuppositions = self.presuppositions
         presuppositions.append("There is a clear and single answer to the question.")
         content = "\n".join(presuppositions) + "\n"
         feedback = f"The question contains false presuppositions that {self.presuppositions}."
         action = f"Correct the false assumptions that {self.presuppositions} and respond based on the corrected assumption."
         content += f"Feedback: {feedback}\nAction: {action}\n"
-        return content
+        return [
+            {
+                "role": "user",
+                "content": self.question
+            },
+            {
+                "role": "assistant",
+                "content": content
+            }
+        ]
 
 class FeedbackActionTemplate(Template):
     question: str
     model_detected_presuppositions: List[str]
     few_shot_data: List[FeedbackActionFewShotExample]
     
-    def __init__(self, question: str, model_detected_presuppositions: str, few_shot_data: List[dict], **kwargs):
+    def __init__(self, question: str, model_detected_presuppositions: str, few_shot_data: List[Dict], system_role: str = "system", **kwargs):
         self.question = question
+        self.system_role = system_role
         self.model_detected_presuppositions = model_detected_presuppositions
-        self.few_shot_data = [FeedbackActionFewShotExample(**dp) for dp in few_shot_data]
+        self.few_shot_data = []
+        for dp in few_shot_data:
+            self.few_shot_data += FeedbackActionFewShotExample(**dp).generate()
 
-    def generate(self, system_role: str = "system", **kwargs):
-        few_shot = []
-        for dp in self.few_shot_data:
-            few_shot.append({"role": "user", "content": dp.question})
-            few_shot.append({"role": "assistant", "content": dp.generate()})
+    def generate(self, **kwargs) -> List[Dict]:
         messages = [
             {
-                "role": system_role,
+                "role": self.system_role,
                 "content": f"""
                     You are a helpful assistant that provides feedback on the question and a guideline for answering the question.
                     You will be given a question and the assumptions that are implicit in the question.
-                    Your task is to first, provide feedback on the question based on whether it contains any false assumptions nad then provide a guideline for answering the question.
+                    Your task is to first, provide feedback on the question based on whether it contains any false assumptions and then provide a guideline for answering the question.
                 """},
-            *few_shot,
+            *self.few_shot_data,
+            {"role": "user", "content": f"Question: {self.question}\nPresuppositions: {self.model_detected_presuppositions}\n"}
+        ]
+        return messages
+    
+class FinalAnswerFewShotExample(Template):
+    def __init__(self, question: str, feedback_action: str, answer: str, **kwargs):
+        self.question = question
+        self.feedback_action = feedback_action
+        self.answer = answer
+        
+    def generate(self, **kwargs) -> Dict[str]:
+        return [
+            {
+                "role": "user",
+                "content": f"""
+                    Question: {self.question}\n
+                    Feedback: {self.feedback_action}\n
+                """
+            },
+            {
+                "role": "assistant",
+                "content": self.answer
+            }
+        ]
+    
+class FinalAnswerTemplate(Template):
+    question: str
+    model_feedback_action: str
+    few_shot_data: List[FinalAnswerFewShotExample]
+    
+    def __init__(self, question: str, model_feedback_action: str, few_shot_data: List[Dict], system_role: str = "system", **kwargs):
+        self.question = question
+        self.model_feedback_action = model_feedback_action
+        self.system_role = system_role
+        self.few_shot_data = []
+        for dp in few_shot_data:
+            self.few_shot_data += FinalAnswerFewShotExample(**dp).generate()
+        
+    def generate(self, **kwargs) -> List[Dict]:
+        messages = [
+            {
+                "role": self.system_role,
+                "content": f"""
+                    You are a helpful assistant that provides a response to a 
+                """},
+            *self.few_shot_data,
             {"role": "user", "content": f"Question: {self.question}\nPresuppositions: {self.model_detected_presuppositions}\n"}
         ]
         return messages

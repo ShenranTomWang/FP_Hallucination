@@ -1,20 +1,18 @@
 import json
 from pathlib import Path
-from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate
+from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate
 from evaluator import CREPEPresuppositionExtractionEvaluator
 from .data_operator import DataOperator
-from data_gen.data_loader import instantiate_dataloader
+from data_gen.data_loader import instantiate_dataloader, DataLoader
 import random, os
-import outlines
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, Response
+from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse, Response
 import torch
 from typing import List
 from pydantic import BaseModel
 from evaluator.utils import bert_score_f1
 
 class CREPEOperator(DataOperator):
-    transformer_model: outlines.models.Transformers = None
     answer_key: str
     response_cls: Response
     action_name: str
@@ -32,18 +30,6 @@ class CREPEOperator(DataOperator):
         else:
             bert_score_f1 = None
         return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
-
-    def message2openai_request(self, id: str, model: str, messages: List[str], **kwargs) -> dict:
-        return {
-            "custom_id": id,
-            "method": "POST",
-            "url": "/v1/chat/completions",
-            "body": {
-                "model": model,
-                "messages": messages,
-                "response_format": self.response_cls.model_json_schema()
-            }
-        }
         
     def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
         save_dp[self.answer_key] = response['response']['body']['choices'][0]['message']['content']
@@ -53,24 +39,15 @@ class CREPEOperator(DataOperator):
         save_dp[self.answer_key] = response.model_dump()
         return save_dp
 
-    def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, json_format: bool = False, **kwargs) -> Response:
-        if json_format:
-            if not self.transformer_model:
-                self.transformer_model = outlines.from_transformers(
-                    model, tokenizer
-                )
-            prompt = tokenizer.apply_chat_template(messages)
-            prompt = tokenizer.decode(prompt)
-            response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
-            return self.response_cls.model_validate_json(response)
-        else:
-            model = model.to(device)
-            prompt = tokenizer.apply_chat_template(messages, return_tensors='pt').to(device)
-            output_ids = model.generate(prompt, max_new_tokens=512)[:, prompt.shape[1]:]
-            output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-            return self.response_cls.model_validate_plain_text(output_text)
-
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: str | None, fname: str = 'top_{}_{}_{}.txt'):
+    def save_top_bottom_k(
+        self,
+        data: list,
+        score_key: str,
+        k: int,
+        out_dir: str,
+        use_aligned: str | None,
+        fname: str = 'top_{}_{}_{}.txt'
+    ):
         key = f'{self.answer_key}_aligned_{use_aligned}' if use_aligned and use_aligned == 'precision' else self.answer_key
         sorted_data = sorted(
             [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
@@ -165,8 +142,8 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.dataloader.save_data(dataset, split=split)
         return self.dataloader.load_data(split)
 
-    def prepare_message(self, raw_dp: dict, system_role: str, json_format: bool = False, **kwargs) -> str:
-        template = CREPEPresuppositionExtractionTemplate(**raw_dp, system_role=system_role, json_format=json_format)
+    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
+        template = CREPEPresuppositionExtractionTemplate(**raw_dp, system_role=system_role)
         return template.generate()
 
 class CREPEFeedbackActionOperator(CREPEOperator):
@@ -182,9 +159,29 @@ class CREPEFeedbackActionOperator(CREPEOperator):
     def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
         
-    def load_data(self, **kwargs):
+    def load_data(self, **kwargs) -> DataLoader:
         return self.dataloader.load_data("CREPE_Presupposition_Extraction")
 
-    def prepare_message(self, raw_dp: dict, system_role: str, json_format: bool = False, **kwargs) -> str:
-        template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role, json_format=json_format)
+    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
+        template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role)
+        return template.generate()
+    
+class CREPEFinalAnaswerOperator(CREPEOperator):
+    def __init__(self):
+        self.action_name = "CREPE_Final_Answer"
+        self.dataloader = None
+        self.response_cls = CREPEFinalAnswerResponse
+        self.answer_key = "model_final_answer"
+        
+    def align_response(self, dp: dict, **kwargs) -> dict:
+        return dp
+
+    def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
+        self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
+
+    def load_data(self, **kwargs) -> DataLoader:
+        return self.dataloader.load_data("CREPE_Feedback_Action")
+    
+    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
+        template = CREPEFinalAnswerTemplate(**raw_dp, system_role=system_role)
         return template.generate()

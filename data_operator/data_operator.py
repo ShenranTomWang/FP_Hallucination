@@ -17,13 +17,40 @@ class DataOperator(ABC):
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         pass
     
-    @abstractmethod
-    def run_transformer_model(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, messages: List[str], device: torch.DeviceObjType, **kwargs) -> Response:
-        pass
+    def run_transformer_model(
+        self,
+        model: AutoModelForCausalLM,
+        tokenizer: AutoTokenizer,
+        messages: List[str],
+        device: torch.DeviceObjType,
+        **kwargs
+    ) -> Response:
+        # if json_format:
+        #     if not self.transformer_model:
+        #         self.transformer_model = outlines.from_transformers(
+        #             model, tokenizer
+        #         )
+        #     prompt = tokenizer.apply_chat_template(messages)
+        #     prompt = tokenizer.decode(prompt)
+        #     response = self.transformer_model(prompt, self.response_cls, max_new_tokens=512)
+        #     return self.response_cls.model_validate_json(response)
+        # else:
+        model = model.to(device)
+        prompt = tokenizer.apply_chat_template(messages, return_tensors='pt').to(device)
+        output_ids = model.generate(prompt, max_new_tokens=512)[:, prompt.shape[1]:]
+        output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        return self.response_cls.model_validate_plain_text(output_text)
     
-    @abstractmethod
     def message2openai_request(self, id: str, model: str, messages: List[str], **kwargs) -> dict:
-        pass
+        return {
+            "custom_id": id,
+            "method": "POST",
+            "url": "/v1/chat/completions",
+            "body": {
+                "model": model,
+                "messages": messages
+            }
+        }
 
     @abstractmethod
     def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
