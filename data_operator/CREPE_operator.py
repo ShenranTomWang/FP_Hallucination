@@ -159,8 +159,18 @@ class CREPEFeedbackActionOperator(CREPEOperator):
     def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
         
-    def load_data(self, **kwargs) -> DataLoader:
-        return self.dataloader.load_data("CREPE_Presupposition_Extraction")
+    def load_data(self, k: int = None, **kwargs) -> DataLoader:
+        dataset = self.dataloader.load_data("CREPE_Presupposition_Extraction")
+        few_shot_data = []
+        with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
+            for line in f:
+                few_shot_dp = json.loads(line.strip())
+                few_shot_data.append(few_shot_dp)
+        if k:
+            few_shot_data = random.sample(few_shot_data, k)
+        for data in dataset:
+            data['few_shot_data'] = few_shot_data
+        self.dataloader.save_data(dataset, split="CREPE_Feedback_Action")
 
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
         template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role)
@@ -179,8 +189,18 @@ class CREPEFinalAnaswerOperator(CREPEOperator):
     def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
         self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
 
-    def load_data(self, **kwargs) -> DataLoader:
-        return self.dataloader.load_data("CREPE_Feedback_Action")
+    def load_data(self, k: int = None, **kwargs) -> DataLoader:
+        dataset = self.dataloader.load_data("CREPE_Feedback_Action")
+        few_shot_data = []
+        with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
+            for line in f:
+                few_shot_dp = json.loads(line.strip())
+                few_shot_data.append(few_shot_dp)
+        if k:
+            few_shot_data = random.sample(few_shot_data, k)
+        for data in dataset:
+            data['few_shot_data'] = few_shot_data
+        self.dataloader.save_data(dataset, split="CREPE_Feedback_Action")
     
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
         template = CREPEFinalAnswerTemplate(**raw_dp, system_role=system_role)

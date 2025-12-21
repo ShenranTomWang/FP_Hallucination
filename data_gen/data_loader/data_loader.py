@@ -20,8 +20,7 @@ class DataLoader(ABC):
             'dev': '{}/CREPE/dev.jsonl',
             'test': '{}/CREPE/test.jsonl',
             'CREPE_Presupposition_Extraction': '{}/curated_dataset_{}_CREPE_Presupposition_Extraction.jsonl',
-            'CREPE_Feedback_Action': '{}/curated_dataset_{}_CREPE_Feedback_Action.jsonl',
-            'few_shot_data': ''     # TODO: migrate loading few shot data here
+            'CREPE_Feedback_Action': '{}/curated_dataset_{}_CREPE_Feedback_Action.jsonl'
         }
     }
     
