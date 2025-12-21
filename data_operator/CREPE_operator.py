@@ -170,7 +170,7 @@ class CREPEFeedbackActionOperator(CREPEOperator):
             few_shot_data = random.sample(few_shot_data, k)
         for data in dataset:
             data['few_shot_data'] = few_shot_data
-        self.dataloader.save_data(dataset, split="CREPE_Feedback_Action")
+        self.dataloader.save_data(dataset, split="CREPE_Presupposition_Extraction")
 
     def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
         template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role)
