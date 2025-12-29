@@ -5,10 +5,7 @@ from evaluator import CREPEPresuppositionExtractionEvaluator
 from .data_operator import DataOperator
 from data_gen.data_loader import instantiate_dataloader, DataLoader
 import random, os
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse, Response
-import torch
-from typing import List
 from pydantic import BaseModel
 from evaluator.utils import bert_score_f1
 
@@ -31,8 +28,18 @@ class CREPEOperator(DataOperator):
             bert_score_f1 = None
         return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
         
-    def parse_response_openai(self, response: dict, save_dp: dict, **kwargs) -> dict:
-        save_dp[self.answer_key] = response['response']['body']['choices'][0]['message']['content']
+    def parse_response_openai(self, response: dict | str, save_dp: dict, **kwargs) -> dict:
+        if isinstance(response, str):
+            save_dp[self.answer_key] = response
+        else:
+            save_dp[self.answer_key] = response['response']['body']['choices'][0]['message']['content']
+        return save_dp
+    
+    def parse_response_gemini(self, response: dict | str, save_dp: dict, **kwargs) -> dict:
+        if isinstance(response, str):
+            save_dp[self.answer_key] = response
+        else:
+            save_dp[self.answer_key] = response['response']['text']
         return save_dp
     
     def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
@@ -142,8 +149,8 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.dataloader.save_data(dataset, split=split)
         return self.dataloader.load_data(split)
 
-    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
-        template = CREPEPresuppositionExtractionTemplate(**raw_dp, system_role=system_role)
+    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+        template = CREPEPresuppositionExtractionTemplate(**raw_dp, **kwargs)
         return template.generate()
 
 class CREPEFeedbackActionOperator(CREPEOperator):
@@ -172,8 +179,8 @@ class CREPEFeedbackActionOperator(CREPEOperator):
             data['few_shot_data'] = few_shot_data
         self.dataloader.save_data(dataset, split="CREPE_Presupposition_Extraction")
 
-    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
-        template = CREPEFeedbackActionTemplate(**raw_dp, system_role=system_role)
+    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+        template = CREPEFeedbackActionTemplate(**raw_dp, **kwargs)
         return template.generate()
     
 class CREPEFinalAnaswerOperator(CREPEOperator):
@@ -202,6 +209,6 @@ class CREPEFinalAnaswerOperator(CREPEOperator):
             data['few_shot_data'] = few_shot_data
         self.dataloader.save_data(dataset, split="CREPE_Feedback_Action")
     
-    def prepare_message(self, raw_dp: dict, system_role: str, **kwargs) -> str:
-        template = CREPEFinalAnswerTemplate(**raw_dp, system_role=system_role)
+    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+        template = CREPEFinalAnswerTemplate(**raw_dp, **kwargs)
         return template.generate()

@@ -2,13 +2,59 @@ from .template import PresuppositionExtractionTemplate, FeedbackActionTemplate, 
 from typing import List, Dict
         
 class CREPEPresuppositionExtractionTemplate(PresuppositionExtractionTemplate):
-    def __init__(self, question: str, few_shot_data: List[Dict], **kwargs):
-        super().__init__(question=question, few_shot_data=few_shot_data)
+    def __init__(
+        self,
+        question: str,
+        few_shot_data: List[Dict],
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ):
+        super().__init__(
+            question=question,
+            few_shot_data=few_shot_data,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )
 
 class CREPEFeedbackActionTemplate(FeedbackActionTemplate):
-    def __init__(self, question: str, model_detected_presuppositions: str, few_shot_data: List[Dict], **kwargs):
-        super().__init__(question=question, model_detected_presuppositions=model_detected_presuppositions, few_shot_data=few_shot_data)
+    def __init__(
+        self,
+        question: str,
+        model_detected_presuppositions: str,
+        few_shot_data: List[Dict],
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ):
+        super().__init__(
+            question=question,
+            model_detected_presuppositions=model_detected_presuppositions,
+            few_shot_data=few_shot_data,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )
 
 class CREPEFinalAnswerTemplate(FinalAnswerTemplate):
-    def __init__(self, question: str, model_feedback_action: str, few_shot_data: List[Dict], **kwargs):
-        super().__init__(question=question, model_feedback_action=model_feedback_action, few_shot_data=few_shot_data)
+    def __init__(
+        self,
+        question: str,
+        model_feedback_action: str,
+        few_shot_data: List[Dict],
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ):
+        super().__init__(
+            question=question,
+            model_feedback_action=model_feedback_action,
+            few_shot_data=few_shot_data,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )

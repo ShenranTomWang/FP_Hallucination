@@ -6,12 +6,14 @@ from tqdm import tqdm
 import data_operator
 from data_gen.data_loader import instantiate_dataloader
 import numpy as np
+from google import genai
+from google.genai import types
 
 def main(args):
     if args.command == 'transformers':
         args.dtype = getattr(torch, args.dtype)
         args.device = torch.device(args.device)
-    if args.command in ['transformers', 'openai', 'openai_check']:
+    if args.command in ['transformers', 'openai', 'openai_check', 'gemini', 'gemini_check']:
         args.out_file = args.out_file.format(args.model.split('/')[-1])
         args.out_file = os.path.join(args.out_dir, args.out_file)
     if hasattr(args, 'operator'):
@@ -42,6 +44,10 @@ def main(args):
         run_openai_model(args, dataset, operator)
     elif args.command == 'openai_check':
         run_openai_model_check(args, dataset, operator)
+    elif args.command == 'gemini':
+        run_gemini_model(args, dataset, operator)
+    elif args.command == 'gemini_check':
+        run_gemini_model_check(args, dataset, operator)
         
 def run_print_examples(args):
     dataset = instantiate_dataloader(args.dataset, args.dataset_dir).load_data(args.split)
@@ -140,6 +146,35 @@ def run_openai_model_check(args, dataset: list, operator: data_operator.DataOper
         for data in dataset:
             f.write(json.dumps(data) + '\n')
 
+def run_gemini_model_check(args, dataset: list, operator: data_operator.DataOperator):
+    result_file_name = f"tmp/gemini_results_{operator.dataloader.dataset_name}_{operator.action_name}.jsonl"
+    if not os.path.exists(result_file_name):
+        with open(args.batch_job_info_file, 'r') as f:
+            batch_job = json.load(f)
+        genai_client = genai.Client(vertexai=True)
+        completed = False
+        while not completed:
+            time.sleep(10)
+            batch_job = genai_client.batches.get(name=batch_job['name'])
+            print(f'Batch job state: {batch_job.state}')
+            if batch_job.state in [types.JobState.JOB_STATE_FAILED, types.JobState.JOB_STATE_CANCELED, types.JobState.JOB_STATE_EXPIRED]:
+                raise RuntimeError(f'Batch job failed with state: {batch_job.state}')
+            completed = batch_job.state == types.JobState.JOB_STATE_SUCCEEDED
+        time.sleep(5)
+        if batch_job.dest and batch_job.dest.file_name:
+            file_content = genai_client.files.download(batch_job.dest.file_name)
+            with open(result_file_name, 'wb') as f:
+                f.write(file_content)
+    with open(result_file_name, 'r') as f:
+        results = [json.loads(line.strip()) for line in f]
+    for res in tqdm(results, desc='Organizing responses'):
+        i = int(res['key'])
+        dataset[i] = operator.parse_response_gemini(res, dataset[i])
+    args.out_file = args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}')
+    with open(args.out_file, 'w') as f:
+        for data in dataset:
+            f.write(json.dumps(data) + '\n')
+
 def run_transformers_model(args, dataset: list, operator: data_operator.DataOperator):
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -161,7 +196,7 @@ def _run_openai_model_batched(args, client: openai.Client, dataset: list, operat
     all_messages = []
     for data in tqdm(dataset, desc='Processing dataset'):
         os.makedirs('tmp', exist_ok=True)
-        messages = operator.prepare_message(data, system_role=args.system_role)
+        messages = operator.prepare_message(data, system_role='developer')
         all_messages.append(messages)
     with open('tmp/temp_messages.jsonl', 'w') as f:
         for i, messages in enumerate(all_messages):
@@ -179,17 +214,57 @@ def _run_openai_model_batched(args, client: openai.Client, dataset: list, operat
     with open('tmp/batch_job_info.json', 'w') as f:
         json.dump({"id": batch_job.id}, f, indent=4)
 
+def _run_gemini_model_batched(args, genai_client: genai.Client, dataset: list, operator: data_operator.DataOperator):
+    all_messages = []
+    for data in tqdm(dataset, desc='Processing dataset'):
+        os.makedirs('tmp', exist_ok=True)
+        messages = operator.prepare_message(data, system_role='system', model_role='model', user_role='user')
+        all_messages.append(messages)
+    with open('tmp/temp_messages.jsonl', 'w') as f:
+        for i, messages in enumerate(all_messages):
+            task = operator.message2gemini_request(f"{i}", messages)
+            f.write(json.dumps(task) + '\n')
+    uploaded_file = genai_client.files.upload(
+        file='tmp/temp_messages.jsonl',
+        config=types.UploadFileConfig(display_name='gemini_batch_input', mime_type='jsonl')
+    )
+    batch_job = genai_client.batches.create(
+        model=args.model,
+        src=uploaded_file.name,
+        config={
+            'display_name': f'gemini_batch_job_{operator.dataloader.dataset_name}_{operator.action_name}',
+        }
+    )
+    with open('tmp/batch_job_info.json', 'w') as f:
+        json.dump(batch_job, f, indent=4)
+
 def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, operator: data_operator.DataOperator):
     count = 0
     for data in tqdm(dataset, desc='Processing dataset'):
-        messages = operator.prepare_message(data, system_role=args.system_role)
+        messages = operator.prepare_message(data, system_role='developer')
         response = client.chat.completions.create(
             model=args.model,
-            messages=messages,
-            response_format=operator.response_cls.model_json_schema()
+            messages=messages
         )
-        generation = response.choices[0].message.content
-        data['model_answer'] = generation
+        data = operator.parse_response_openai(response.text, data)
+        with open(args.out_file, 'a') as f:
+            f.write(json.dumps(data) + '\n')
+        count += 1
+        print(f'Progress: {count}/{len(dataset) + args.start_idx}')
+
+def _run_gemini_model_one_by_one(args, client: genai.Client, dataset: list, operator: data_operator.DataOperator):
+    count = 0
+    for data in tqdm(dataset, desc='Processing dataset'):
+        messages = operator.prepare_message(data, system_role='system', model_role='model', user_role='user')
+        response = client.models.generate_content(
+            model=args.model,
+            contents=[{"role": message["role"], "parts": [{"text": message["content"]}]} for message in messages[1:]],
+            config=types.GenerateContentConfig(
+                temperature=0.0,
+                system_instruction=messages[0]['content']
+            )
+        )
+        data = operator.parse_response_gemini(response.text, data)
         with open(args.out_file, 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1
@@ -201,6 +276,13 @@ def run_openai_model(args, dataset: list, operator: data_operator.DataOperator):
         _run_openai_model_batched(args, client, dataset, operator)
     else:
         _run_openai_model_one_by_one(args, client, dataset, operator)
+        
+def run_gemini_model(args, dataset: list, operator: data_operator.DataOperator):
+    genai_client = genai.Client(vertexai=True)
+    if args.batched_job:
+        _run_gemini_model_batched(args, genai_client, dataset, operator)
+    else:
+        _run_gemini_model_one_by_one(args, genai_client, dataset, operator)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='For the selected model, generate responses using FP extraction prompt templates, store to output file.')
@@ -231,6 +313,18 @@ if __name__ == '__main__':
     openai_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     openai_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     
+    gemini_parser = model_subparsers.add_parser('gemini', help='Arguments for Gemini models')
+    gemini_parser.add_argument('--model', type=str, required=True, help='Gemini model name (e.g., gemini-2.5-flash)')
+    gemini_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
+    gemini_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
+    gemini_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
+    gemini_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
+    gemini_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    gemini_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
+    gemini_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
+    gemini_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
+    gemini_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    
     openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
     openai_check_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
@@ -240,6 +334,16 @@ if __name__ == '__main__':
     openai_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
     openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
+    
+    gemini_check_parser = model_subparsers.add_parser('gemini_check', help='Check status of Gemini batched job')
+    gemini_check_parser.add_argument('--model', type=str, required=True, help='Gemini model name (e.g., gpt-5)')
+    gemini_check_parser.add_argument('--batch_job_info_file', type=str, default='tmp/batch_job_info.json', help='File containing batch job info')
+    gemini_check_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
+    gemini_check_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    gemini_check_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
+    gemini_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
+    gemini_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    gemini_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     
     align_responses_parser = model_subparsers.add_parser('align_responses', help='Align model responses with original dataset GT answers')
     align_responses_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to align')

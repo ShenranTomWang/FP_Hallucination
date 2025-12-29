@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Dict
 from response import Response
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
@@ -41,7 +41,8 @@ class DataOperator(ABC):
         output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
         return self.response_cls.model_validate_plain_text(output_text)
     
-    def message2openai_request(self, id: str, model: str, messages: List[str], **kwargs) -> dict:
+    @staticmethod
+    def message2openai_request(id: str, model: str, messages: List[Dict[str, str]], **kwargs) -> dict:
         return {
             "custom_id": id,
             "method": "POST",
@@ -49,6 +50,30 @@ class DataOperator(ABC):
             "body": {
                 "model": model,
                 "messages": messages
+            }
+        }
+    
+    @staticmethod
+    def message2gemini_request(id: str, messages: List[Dict[str, str]], temperature: float = 0.0, **kwargs) -> dict:
+        return {
+            "key": id,
+            "request": {
+                "contents": [
+                    {
+                        "role": message['role'],
+                        "parts": [
+                            {"text": message['content']}
+                        ]
+                    } for message in messages[1:]
+                ],
+                "config": {
+                    "system_instruction": {
+                        "parts": [
+                            {"text": messages[0]['content']}
+                        ]
+                    },
+                    "temperature": temperature
+                }
             }
         }
 

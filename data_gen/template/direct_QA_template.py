@@ -1,7 +1,7 @@
 from .template import Template
 
 class DirectQATemplate(Template):
-    def __init__(self, question: str, system_role: str = "system" **kwargs):
+    def __init__(self, question: str, system_role: str = "system", **kwargs):
         self.question = question
         self.system_role = system_role
         

@@ -28,3 +28,11 @@ class CREPEFeedbackActionResponse(CREPEResponse):
             elif line.startswith("Action:"):
                 action = line[len("Action:"):].strip()
         return cls(feedback=feedback, action=action)
+
+class CREPEFinalAnswerResponse(CREPEResponse):
+    answer: str
+    
+    @classmethod
+    def model_validate_plain_text(cls, text: str):
+        text = text.lower().replace("assistant\n", "")
+        return cls(answer=text.strip())
