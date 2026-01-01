@@ -17,14 +17,16 @@ python run_model.py \
         --model gemini-2.5-flash \
         --operator CREPEPresuppositionExtractionOperator \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
-        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets
+        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
+        --split dev
 
 python run_model.py \
     gemini \
         --model gemini-2.5-flash \
         --operator CREPEFeedbackActionOperator \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
-        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets
+        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
+        --split dev
 
 python run_model.py \
     evaluate \
