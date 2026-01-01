@@ -247,7 +247,7 @@ def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, ope
             messages=messages
         )
         data = operator.parse_response_openai(response.text, data)
-        with open(args.out_file, 'a') as f:
+        with open(args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}'), 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
@@ -265,7 +265,7 @@ def _run_gemini_model_one_by_one(args, client: genai.Client, dataset: list, oper
             )
         )
         data = operator.parse_response_gemini(response.text, data)
-        with open(args.out_file, 'a') as f:
+        with open(args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}'), 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
