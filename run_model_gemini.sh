@@ -16,24 +16,14 @@ cd /home/shenranw/projects/aip-vshwartz/shenranw/FP_Hallucination
 python run_model.py \
     gemini \
         --model gemini-2.5-flash \
-        --batched_job \
-        --operator CREPEPresuppositionExtractionOperator
-
-python run_model.py \
-    gemini_check \
-        --model gemini-2.5-flash \
-        --operator CREPEPresuppositionExtractionOperator
+        --operator CREPEPresuppositionExtractionOperator \
+        --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out
 
 python run_model.py \
     gemini \
         --model gemini-2.5-flash \
-        --batched_job \
-        --operator CREPEFeedbackActionOperator
-
-python run_model.py \
-    gemini_check \
-        --model gemini-2.5-flash \
-        --operator CREPEFeedbackActionOperator
+        --operator CREPEFeedbackActionOperator \
+        --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out
 
 python run_model.py \
     evaluate \
