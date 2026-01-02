@@ -33,6 +33,7 @@ class CREPEOperator(DataOperator):
             save_dp[self.answer_key] = response
         else:
             save_dp[self.answer_key] = response['response']['body']['choices'][0]['message']['content']
+        save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key])
         return save_dp
     
     def parse_response_gemini(self, response: dict | str, save_dp: dict, **kwargs) -> dict:
@@ -40,6 +41,7 @@ class CREPEOperator(DataOperator):
             save_dp[self.answer_key] = response
         else:
             save_dp[self.answer_key] = response['response']['text']
+        save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key])
         return save_dp
     
     def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
