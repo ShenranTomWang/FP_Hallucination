@@ -21,6 +21,12 @@ python run_model.py \
         --split dev
 
 python run_model.py \
+    align_responses \
+        --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl \
+        --operator CREPEPresuppositionExtractionOperator \
+        --model_type ${HF_HOME}/roberta-large
+
+python run_model.py \
     gemini \
         --model gemini-2.5-flash \
         --operator CREPEFeedbackActionOperator \
@@ -30,7 +36,7 @@ python run_model.py \
 
 python run_model.py \
     evaluate \
-        --file out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl \
+        --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl \
         --operator CREPEPresuppositionExtractionOperator \
         --show_top_bottom_k 20
 
