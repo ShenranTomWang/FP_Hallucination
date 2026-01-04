@@ -1,10 +1,9 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --mem=24G
-#SBATCH --time=6:00:00
-#SBATCH --account=aip-vshwartz
-#SBATCH --job-name=run_model
+#SBATCH --gpus=1
+#SBATCH --mem-per-cpu=16G
+#SBATCH --time=12:0:0
+#SBATCH --partition=nlpgpo
 
 source /ubc/cs/home/s/shenranw/scratch/envs/FP_Hallucination/.venv/bin/activate
 
