@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class DataOperator(ABC):
     action_name: str
     response_cls: Response
+    exclude_domains: List[str] = []
     
     @abstractmethod
     def align_response(self, dp: dict, **kwargs) -> dict:
@@ -41,20 +42,28 @@ class DataOperator(ABC):
         output_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
         return self.response_cls.model_validate_plain_text(output_text)
     
-    @staticmethod
-    def message2openai_request(id: str, model: str, messages: List[Dict[str, str]], **kwargs) -> dict:
+    def message2openai_request(self, id: str, model: str, messages: List[Dict[str, str]], use_web_search: bool = False, **kwargs) -> dict:
         return {
             "custom_id": id,
             "method": "POST",
             "url": "/v1/chat/completions",
             "body": {
                 "model": model,
-                "messages": messages
+                "messages": messages,
+                "tools": [
+                    {
+                        "type": "web_search",
+                        "filters": {
+                            "allowed_domains": [
+                                "wikipedia.org"
+                            ]
+                        }
+                    }
+                ] if use_web_search else []
             }
         }
     
-    @staticmethod
-    def message2gemini_request(id: str, messages: List[Dict[str, str]], temperature: float = 0.0, **kwargs) -> dict:
+    def message2gemini_request(self, id: str, messages: List[Dict[str, str]], temperature: float = 0.0, use_web_search: bool = False, **kwargs) -> dict:
         return {
             "key": id,
             "request": {
@@ -72,7 +81,12 @@ class DataOperator(ABC):
                             {"text": messages[0]['content']}
                         ]
                     },
-                    "temperature": temperature
+                    "temperature": temperature,
+                    "config": {
+                        "tools": [
+                            {"google_search": {"exclude_domains": self.exclude_domains}}
+                        ] if use_web_search else []
+                    }
                 }
             }
         }

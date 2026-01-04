@@ -200,7 +200,7 @@ def _run_openai_model_batched(args, client: openai.Client, dataset: list, operat
         all_messages.append(messages)
     with open('tmp/temp_messages.jsonl', 'w') as f:
         for i, messages in enumerate(all_messages):
-            task = operator.message2openai_request(f"{i}", args.model, messages)
+            task = operator.message2openai_request(f"{i}", args.model, messages, use_web_search=args.use_web_search)
             f.write(json.dumps(task) + '\n')
     batch_file = client.files.create(
         file=open('tmp/temp_messages.jsonl', "rb"),
@@ -222,7 +222,7 @@ def _run_gemini_model_batched(args, genai_client: genai.Client, dataset: list, o
         all_messages.append(messages)
     with open('tmp/temp_messages.jsonl', 'w') as f:
         for i, messages in enumerate(all_messages):
-            task = operator.message2gemini_request(f"{i}", messages)
+            task = operator.message2gemini_request(f"{i}", messages, use_web_search=args.use_web_search)
             f.write(json.dumps(task) + '\n')
     uploaded_file = genai_client.files.upload(
         file='tmp/temp_messages.jsonl',
@@ -244,7 +244,15 @@ def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, ope
         messages = operator.prepare_message(data, system_role='developer')
         response = client.chat.completions.create(
             model=args.model,
-            messages=messages
+            messages=messages,
+            tools=[
+                {
+                    "type": "web_search",
+                    "filters": {
+                        "allowed_domains": ["wikipedia.org"]
+                    }
+                }
+            ]
         )
         data = operator.parse_response_openai(response.text, data)
         with open(args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}'), 'a') as f:
@@ -261,7 +269,12 @@ def _run_gemini_model_one_by_one(args, client: genai.Client, dataset: list, oper
             contents=[{"role": message["role"], "parts": [{"text": message["content"]}]} for message in messages[1:]],
             config=types.GenerateContentConfig(
                 temperature=0.0,
-                system_instruction=messages[0]['content']
+                system_instruction=messages[0]['content'],
+                tools=[
+                    types.Tool(
+                        google_search=types.GoogleSearch(include_domains=operator.exclude_domains)
+                    )
+                ] if args.use_web_search else []
             )
         )
         data = operator.parse_response_gemini(response.text, data)
@@ -312,6 +325,7 @@ if __name__ == '__main__':
     openai_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     openai_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     openai_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    openai_parser.add_argument('--use_web_search', action='store_true', help='Whether to use web search tool in Gemini model calls')
     
     gemini_parser = model_subparsers.add_parser('gemini', help='Arguments for Gemini models')
     gemini_parser.add_argument('--model', type=str, required=True, help='Gemini model name (e.g., gemini-2.5-flash)')
@@ -324,6 +338,7 @@ if __name__ == '__main__':
     gemini_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     gemini_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     gemini_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    gemini_parser.add_argument('--use_web_search', action='store_true', help='Whether to use web search tool in Gemini model calls')
     
     openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
     openai_check_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')

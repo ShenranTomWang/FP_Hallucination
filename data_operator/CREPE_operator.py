@@ -11,8 +11,10 @@ from evaluator.utils import bert_score_f1
 
 class CREPEOperator(DataOperator):
     answer_key: str
-    response_cls: Response
     action_name: str
+    
+    def __init__(self):
+        self.exclude_domains = ['reddit.com']
 
     def evaluate(self, eval_dp: dict, run_bleurt: bool, run_bert_score: bool, use_aligned: str | None) -> tuple:
         evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, use_aligned=use_aligned)
@@ -96,6 +98,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.dataloader = None
         self.response_cls = CREPEPresuppositionExtractionResponse
         self.answer_key = "model_detected_presuppositions"
+        super().__init__()
 
     def align_response(self, dp: dict, model_type: str = None, **kwargs) -> dict:
         presuppositions_gt = dp['presuppositions']
@@ -161,6 +164,7 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         self.dataloader = None
         self.response_cls = CREPEFeedbackActionResponse
         self.answer_key = "model_feedback_action"
+        super().__init__()
         
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
@@ -191,6 +195,7 @@ class CREPEFinalAnaswerOperator(CREPEOperator):
         self.dataloader = None
         self.response_cls = CREPEFinalAnswerResponse
         self.answer_key = "model_final_answer"
+        super().__init__()
         
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
