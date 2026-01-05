@@ -128,8 +128,7 @@ class FeedbackActionTemplate(Template):
                     You will be given a question and the assumptions that are implicit in the question.
                     Your task is to first, provide feedback on the question based on whether it contains any false assumptions and then provide a guideline for answering the question.
                     Separate your feedback and action with a newline, and format your response as:
-                    Feedback: <your feedback>
-                    Action: <your action>
+                    Feedback: <your feedback>\nAction: <your action>
                 """
             },
             *self.few_shot_data,
