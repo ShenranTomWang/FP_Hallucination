@@ -84,14 +84,13 @@ class FeedbackActionFewShotExample(Template):
     def generate(self, **kwargs) -> List[Dict]:
         presuppositions = self.presuppositions
         presuppositions.append("There is a clear and single answer to the question.")
-        content = "\n".join(presuppositions) + "\n"
-        feedback = f"The question contains false presuppositions that {self.presuppositions}."
-        action = f"Correct the false assumptions that {self.presuppositions} and respond based on the corrected assumption."
+        feedback = f"The question contains false presuppositions that {'; '.join(self.presuppositions)}."
+        action = f"Correct the false assumptions that {'; '.join(self.presuppositions)} and respond based on the corrected assumption."
         content += f"Feedback: {feedback}\nAction: {action}\n"
         return [
             {
                 "role": self.user_role,
-                "content": self.question
+                "content": f"{self.question} Presuppositions: {'; '.join(self.presuppositions)}"
             },
             {
                 "role": self.model_role,
@@ -107,7 +106,7 @@ class FeedbackActionTemplate(Template):
     user_role: str
     model_role: str
     
-    def __init__(self, question: str, model_detected_presuppositions: str, few_shot_data: List[Dict], system_role: str = "system", user_role: str = "user", model_role: str = "assistant", **kwargs):
+    def __init__(self, question: str, model_detected_presuppositions: List[str], few_shot_data: List[Dict], system_role: str = "system", user_role: str = "user", model_role: str = "assistant", **kwargs):
         self.question = question
         self.system_role = system_role
         self.user_role = user_role
@@ -130,7 +129,7 @@ class FeedbackActionTemplate(Template):
             *self.few_shot_data,
             {
                 "role": self.user_role,
-                "content": f"Question: {self.question}\nPresuppositions: {self.model_detected_presuppositions}\n"
+                "content": f"Question: {self.question}\nPresuppositions: {'; '.join(self.model_detected_presuppositions)}\n"
             }
         ]
         return messages

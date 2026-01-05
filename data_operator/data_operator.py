@@ -113,10 +113,6 @@ class DataOperator(ABC):
         pass
     
     @abstractmethod
-    def add_data_module(self, file_dir: str = None, **kwargs):
-        pass
-    
-    @abstractmethod
     def load_data(self, **kwargs) -> List[dict]:
         pass
 

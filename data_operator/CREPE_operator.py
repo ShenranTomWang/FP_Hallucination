@@ -3,7 +3,6 @@ from pathlib import Path
 from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate
 from evaluator import CREPEPresuppositionExtractionEvaluator
 from .data_operator import DataOperator
-from data_gen.data_loader import instantiate_dataloader, DataLoader
 import random, os
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse, Response
 from pydantic import BaseModel
@@ -35,7 +34,7 @@ class CREPEOperator(DataOperator):
             save_dp[self.answer_key] = response
         else:
             save_dp[self.answer_key] = response['response']['body']['choices'][0]['message']['content']
-        save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key])
+        save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key]).model_dump()
         return save_dp
     
     def parse_response_gemini(self, response: dict | str, save_dp: dict, **kwargs) -> dict:
@@ -43,12 +42,34 @@ class CREPEOperator(DataOperator):
             save_dp[self.answer_key] = response
         else:
             save_dp[self.answer_key] = response['response']['text']
-        save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key])
+        save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key]).model_dump()
         return save_dp
     
     def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
         save_dp[self.answer_key] = response.model_dump()
         return save_dp
+
+    def load_data(self, file_path: str, k: int = None, **kwargs):
+        with open(file_path, 'r') as f:
+            dataset = []
+            for line in f:
+                dp = json.loads(line.strip())
+                dataset.append(dp)
+        if not dataset[0].get('few_shot_data'):
+            few_shot_data = []
+            with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
+                for line in f:
+                    few_shot_dp = json.loads(line.strip())
+                    few_shot_data.append(few_shot_dp)
+            if k:
+                k = min(k, len(few_shot_data))
+                few_shot_data = random.sample(few_shot_data, k)
+            for data in dataset:
+                data['few_shot_data'] = few_shot_data
+            with open(file_path, 'w') as f:
+                for dp in dataset:
+                    f.write(json.dumps(dp) + '\n')
+        return dataset
 
     def save_top_bottom_k(
         self,
@@ -95,7 +116,6 @@ class CREPEOperator(DataOperator):
 class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Presupposition_Extraction"
-        self.dataloader = None
         self.response_cls = CREPEPresuppositionExtractionResponse
         self.answer_key = "model_detected_presuppositions"
         super().__init__()
@@ -135,25 +155,6 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         dp['presuppositions_aligned_recall'] = list(aligned_map.values())
         return dp
 
-    def add_data_module(self, file_dir: str = 'dataset', **kwargs):
-        self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir)
-
-    def load_data(self, split: str, k: int = None, **kwargs):
-        dataset = self.dataloader.load_data(split=split)
-        few_shot_ids = []
-        with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
-            for line in f:
-                few_shot_id = json.loads(line.strip())['id']
-                few_shot_ids.append(few_shot_id)
-        few_shot_data = self.dataloader.load_data(split='train')
-        few_shot_data = [data for data in few_shot_data if data['id'] in few_shot_ids]
-        if k:
-            few_shot_data = random.sample(few_shot_data, k)
-        for data in dataset:
-            data['few_shot_data'] = few_shot_data
-        self.dataloader.save_data(dataset, split=split)
-        return self.dataloader.load_data(split)
-
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         template = CREPEPresuppositionExtractionTemplate(**raw_dp, **kwargs)
         return template.generate()
@@ -161,29 +162,12 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
 class CREPEFeedbackActionOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Feedback_Action"
-        self.dataloader = None
         self.response_cls = CREPEFeedbackActionResponse
         self.answer_key = "model_feedback_action"
         super().__init__()
         
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
-
-    def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
-        self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
-        
-    def load_data(self, k: int = None, **kwargs) -> DataLoader:
-        dataset = self.dataloader.load_data("CREPE_Presupposition_Extraction")
-        few_shot_data = []
-        with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
-            for line in f:
-                few_shot_dp = json.loads(line.strip())
-                few_shot_data.append(few_shot_dp)
-        if k:
-            few_shot_data = random.sample(few_shot_data, k)
-        for data in dataset:
-            data['few_shot_data'] = few_shot_data
-        self.dataloader.save_data(dataset, split="CREPE_Presupposition_Extraction")
 
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         template = CREPEFeedbackActionTemplate(**raw_dp, **kwargs)
@@ -192,29 +176,12 @@ class CREPEFeedbackActionOperator(CREPEOperator):
 class CREPEFinalAnaswerOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Final_Answer"
-        self.dataloader = None
         self.response_cls = CREPEFinalAnswerResponse
         self.answer_key = "model_final_answer"
         super().__init__()
         
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
-
-    def add_data_module(self, model_name: str, file_dir: str = 'out', **kwargs):
-        self.dataloader = instantiate_dataloader(dataset_name="CREPE", file_dir=file_dir, model_name=model_name)
-
-    def load_data(self, k: int = None, **kwargs) -> DataLoader:
-        dataset = self.dataloader.load_data("CREPE_Feedback_Action")
-        few_shot_data = []
-        with open(str(Path(__file__).resolve().parent.parent / 'data_gen' / 'CREPE' / 'few_shot.jsonl'), 'r') as f:
-            for line in f:
-                few_shot_dp = json.loads(line.strip())
-                few_shot_data.append(few_shot_dp)
-        if k:
-            few_shot_data = random.sample(few_shot_data, k)
-        for data in dataset:
-            data['few_shot_data'] = few_shot_data
-        self.dataloader.save_data(dataset, split="CREPE_Feedback_Action")
     
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         template = CREPEFinalAnswerTemplate(**raw_dp, **kwargs)

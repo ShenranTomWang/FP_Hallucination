@@ -9,6 +9,7 @@ source /ubc/cs/home/s/shenranw/scratch/envs/FP_Hallucination/.venv/bin/activate
 
 export HF_HOME=/ubc/cs/home/s/shenranw/scratch/tmp/transformers_cache
 export TRITON_CACHE_DIR=/ubc/cs/home/s/shenranw/scratch/tmp/triton_cache
+export GOOGLE_API_KEY=AQ.Ab8RN6LowP5wKbTJrGhnpW82W-5IpG3fLEosG94PPvvMEaD0_w
 
 cd /ubc/cs/home/s/shenranw/FP_Hallucination
 python run_model.py \
@@ -16,8 +17,7 @@ python run_model.py \
         --model gemini-2.5-flash \
         --operator CREPEPresuppositionExtractionOperator \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
-        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
-        --split dev
+        --dataset_path /ubc/cs/home/s/shenranw/scratch/datasets/CREPE/dev.jsonl
 
 python run_model.py \
     align_responses \
@@ -30,8 +30,14 @@ python run_model.py \
         --model gemini-2.5-flash \
         --operator CREPEFeedbackActionOperator \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
-        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
-        --split dev
+        --dataset_path /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl
+
+python run_model.py \
+    gemini \
+        --model gemini-2.5-flash \
+        --operator CREPEFinalAnswerOperator \
+        --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
+        --dataset_path /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Feedback_Action.jsonl
 
 python run_model.py \
     evaluate \
@@ -41,6 +47,6 @@ python run_model.py \
 
 python run_model.py \
     evaluate \
-        --file out/curated_dataset_gemini-2.5-flash_CREPE_Feedback_Action.jsonl \
-        --operator CREPEFeedbackActionOperator \
+        --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Final_Answer.jsonl \
+        --operator CREPEFinalAnswerOperator \
         --show_top_bottom_k 20

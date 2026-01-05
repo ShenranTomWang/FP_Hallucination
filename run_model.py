@@ -4,7 +4,6 @@ import torch
 import openai
 from tqdm import tqdm
 import data_operator
-from data_gen.data_loader import instantiate_dataloader
 import numpy as np
 from google import genai
 from google.genai import types
@@ -30,11 +29,7 @@ def main(args):
         run_align_responses(args, operator)
         return
 
-    if args.dataset_dir is None:
-        operator.add_data_module(model_name=args.model)
-    else:
-        operator.add_data_module(file_dir=args.dataset_dir, model_name=args.model)
-    dataset_full = operator.load_data(split=args.split, k=args.k if hasattr(args, 'k') else None)
+    dataset_full = operator.load_data(file_path=args.dataset_path, k=args.k if hasattr(args, 'k') else None)
     dataset = dataset_full[args.start_idx:]
     os.makedirs(os.path.dirname(args.out_file), exist_ok=True)
     
@@ -50,7 +45,8 @@ def main(args):
         run_gemini_model_check(args, dataset, operator)
         
 def run_print_examples(args):
-    dataset = instantiate_dataloader(args.dataset, args.dataset_dir).load_data(args.split)
+    with open(args.dataset_path, 'r') as f:
+        dataset = [json.loads(line.strip()) for line in f]
     with open(os.path.join(args.out_dir, 'printed_examples.txt'), 'w') as f:
         for dp in dataset[:args.k]:
             f.write(f'ID: {dp["id"]}\n')
@@ -304,9 +300,8 @@ if __name__ == '__main__':
     transformers_parser = model_subparsers.add_parser('transformers', help='Arguments for transformers models')
     transformers_parser.add_argument('--model', type=str, required=True, help='Model name or path for loading from transformers')
     transformers_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
-    transformers_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
+    transformers_parser.add_argument('--dataset_path', type=str, default=None, help='Path to the dataset file (JSONL format)')
     transformers_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
-    transformers_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     transformers_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
     transformers_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     transformers_parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
@@ -318,9 +313,8 @@ if __name__ == '__main__':
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
     openai_parser.add_argument('--system_role', type=str, default='developer', help='Name of the instruction-giving role')
     openai_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
-    openai_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
+    openai_parser.add_argument('--dataset_path', type=str, default=None, help='Path to the dataset file (JSONL format)')
     openai_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
-    openai_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     openai_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
     openai_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     openai_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
@@ -331,9 +325,8 @@ if __name__ == '__main__':
     gemini_parser.add_argument('--model', type=str, required=True, help='Gemini model name (e.g., gemini-2.5-flash)')
     gemini_parser.add_argument('--system_role', type=str, default='system', help='Name of the instruction-giving role')
     gemini_parser.add_argument('--batched_job', action='store_true', help='Whether to use batched job submission')
-    gemini_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
+    gemini_parser.add_argument('--dataset_path', type=str, default=None, help='Path to the dataset file (JSONL format)')
     gemini_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
-    gemini_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
     gemini_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
     gemini_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     gemini_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
@@ -346,8 +339,7 @@ if __name__ == '__main__':
     openai_check_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     openai_check_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     openai_check_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
-    openai_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
-    openai_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    openai_check_parser.add_argument('--dataset_path', type=str, default=None, help='Path to the dataset file (JSONL format)')
     openai_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     
     gemini_check_parser = model_subparsers.add_parser('gemini_check', help='Check status of Gemini batched job')
@@ -356,8 +348,7 @@ if __name__ == '__main__':
     gemini_check_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     gemini_check_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     gemini_check_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
-    gemini_check_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
-    gemini_check_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    gemini_check_parser.add_argument('--dataset_path', type=str, default=None, help='Path to the dataset file (JSONL format)')
     gemini_check_parser.add_argument('--start_idx', type=int, default=0, help='Starting index for cached runs')
     
     align_responses_parser = model_subparsers.add_parser('align_responses', help='Align model responses with original dataset GT answers')
@@ -374,8 +365,7 @@ if __name__ == '__main__':
     
     print_parser = model_subparsers.add_parser('print_examples', help='Print examples from dataset')
     print_parser.add_argument('--dataset', type=str, required=True, help='Dataset name to use for printing examples')
-    print_parser.add_argument('--dataset_dir', type=str, default=None, help='Path to the dataset directory (JSONL format)')
-    print_parser.add_argument('--split', type=str, default='test', help='Dataset split to use (e.g., train, dev, test)')
+    print_parser.add_argument('--dataset_path', type=str, default=None, help='Path to the dataset file (JSONL format)')
     print_parser.add_argument('--k', type=int, default=5, help='Number of examples to print')
     print_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the printed examples')
     

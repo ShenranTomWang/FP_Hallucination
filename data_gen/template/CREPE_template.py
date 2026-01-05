@@ -30,6 +30,8 @@ class CREPEFeedbackActionTemplate(FeedbackActionTemplate):
         user_role: str = "user",
         **kwargs
     ):
+        few_shot_data = [{**dp, "presuppositions": dp["presuppositions"]} for dp in few_shot_data]
+        model_detected_presuppositions = model_detected_presuppositions["presuppositions"]
         super().__init__(
             question=question,
             model_detected_presuppositions=model_detected_presuppositions,
@@ -50,6 +52,7 @@ class CREPEFinalAnswerTemplate(FinalAnswerTemplate):
         user_role: str = "user",
         **kwargs
     ):
+        few_shot_data = [{**dp, "answer": dp["comment"]} for dp in few_shot_data]
         super().__init__(
             question=question,
             model_feedback_action=model_feedback_action,
