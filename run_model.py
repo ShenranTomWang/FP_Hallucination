@@ -248,7 +248,7 @@ def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, ope
                         "allowed_domains": ["wikipedia.org"]
                     }
                 }
-            ]
+            ] if args.use_web_search else []
         )
         data = operator.parse_response_openai(response.text, data)
         with open(args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}'), 'a') as f:
