@@ -176,7 +176,7 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         template = CREPEFeedbackActionTemplate(**raw_dp, **kwargs)
         return template.generate()
     
-class CREPEFinalAnaswerOperator(CREPEOperator):
+class CREPEFinalAnswerOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Final_Answer"
         self.response_cls = CREPEFinalAnswerResponse

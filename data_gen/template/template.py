@@ -146,20 +146,26 @@ class FinalAnswerFewShotExample(Template):
     user_role: str
     model_role: str
     
-    def __init__(self, question: str, feedback_action: str, answer: str, user_role: str = "user", model_role: str = "assistant", **kwargs):
+    def __init__(self, question: str, presuppositions: str, is_normal: bool, answer: str, user_role: str = "user", model_role: str = "assistant", **kwargs):
         self.question = question
-        self.feedback_action = feedback_action
+        self.presuppositions = presuppositions
+        self.is_normal = is_normal
         self.answer = answer
         self.user_role = user_role
         self.model_role = model_role
         
     def generate(self, **kwargs) -> List[Dict]:
+        if self.is_normal:
+            feedback = "The question is valid and does not contain false presuppositions."
+            action = "Answer the question directly based on the presuppositions."
+        else:
+            feedback = f"The question contains false presuppositions that {'; '.join(self.presuppositions)}."
+            action = f"Correct the false assumptions that {'; '.join(self.presuppositions)} and respond based on the corrected assumption."
         return [
             {
                 "role": self.user_role,
                 "content": f"""
-                    Question: {self.question}\n
-                    Feedback: {self.feedback_action}\n
+                    Question: {self.question}\nFeedback: {feedback}\nAction: {action}
                 """
             },
             {
@@ -191,12 +197,14 @@ class FinalAnswerTemplate(Template):
             {
                 "role": self.system_role,
                 "content": f"""
-                    You are a helpful assistant that provides a response to a 
+                    You are a helpful assistant that provides a response to a question based on the feedback and action guideline.
+                    You will be given a question and feedback and action guideline on how to answer the question.
+                    Your task is to provide a final answer to the question based on the feedback and action guideline
                 """},
             *self.few_shot_data,
             {
                 "role": self.user_role,
-                "content": f"Question: {self.question}\nPresuppositions: {self.model_detected_presuppositions}\n"
+                "content": f"Question: {self.question}\n{self.model_feedback_action}\n"
             }
         ]
         return messages

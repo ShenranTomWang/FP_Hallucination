@@ -14,20 +14,11 @@ class CREPEPresuppositionExtractionResponse(CREPEResponse):
         return cls(presuppositions=presuppositions)
     
 class CREPEFeedbackActionResponse(CREPEResponse):
-    feedback: str
-    action: str
+    feedback_action: str
     
     @classmethod
     def model_validate_plain_text(cls, text: str):
-        lines = text.split("\n")
-        feedback = ""
-        action = ""
-        for line in lines:
-            if line.startswith("Feedback:"):
-                feedback = line[len("Feedback:"):].strip()
-            elif line.startswith("Action:"):
-                action = line[len("Action:"):].strip()
-        return cls(feedback=feedback, action=action)
+        return cls(feedback_action=text)
 
 class CREPEFinalAnswerResponse(CREPEResponse):
     answer: str

@@ -1,6 +1,5 @@
 from .template import Template
-from .direct_QA_template import DirectQATemplate
-from .CREPE_template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate
+from .CREPE_template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate, CREPEDirectQATemplate
 
 __all__ = [
     "Template",
