@@ -12,12 +12,12 @@ def main(args):
     if args.command == 'transformers':
         args.dtype = getattr(torch, args.dtype)
         args.device = torch.device(args.device)
-    if args.command in ['transformers', 'openai', 'openai_check', 'gemini', 'gemini_check']:
-        args.out_file = args.out_file.format(args.model.split('/')[-1])
-        args.out_file = os.path.join(args.out_dir, args.out_file)
     if hasattr(args, 'operator'):
         operator_class: data_operator.DataOperator = getattr(data_operator, args.operator)
         operator = operator_class()
+    if args.command in ['transformers', 'openai', 'openai_check', 'gemini', 'gemini_check']:
+        args.out_file = args.out_file.format(f'{args.model.split("/")[-1]}_{operator.action_name}')
+        args.out_file = os.path.join(args.out_dir, args.out_file)
 
     if args.command == 'evaluate':
         run_evaluate(args, operator)
@@ -137,7 +137,6 @@ def run_openai_model_check(args, dataset: list, operator: data_operator.DataOper
     for res in tqdm(results, desc='Organizing responses'):
         i = int(res['custom_id'])
         dataset[i] = operator.parse_response_openai(res, dataset[i])
-    args.out_file = args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}')
     with open(args.out_file, 'w') as f:
         for data in dataset:
             f.write(json.dumps(data) + '\n')
@@ -166,7 +165,6 @@ def run_gemini_model_check(args, dataset: list, operator: data_operator.DataOper
     for res in tqdm(results, desc='Organizing responses'):
         i = int(res['key'])
         dataset[i] = operator.parse_response_gemini(res, dataset[i])
-    args.out_file = args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}')
     with open(args.out_file, 'w') as f:
         for data in dataset:
             f.write(json.dumps(data) + '\n')
@@ -251,7 +249,7 @@ def _run_openai_model_one_by_one(args, client: openai.Client, dataset: list, ope
             ] if args.use_web_search else []
         )
         data = operator.parse_response_openai(response.text, data)
-        with open(args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}'), 'a') as f:
+        with open(args.out_file, 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
@@ -274,7 +272,7 @@ def _run_gemini_model_one_by_one(args, client: genai.Client, dataset: list, oper
             )
         )
         data = operator.parse_response_gemini(response.text, data)
-        with open(args.out_file.format(f'{args.model.split('/')[-1]}_{operator.action_name}'), 'a') as f:
+        with open(args.out_file, 'a') as f:
             f.write(json.dumps(data) + '\n')
         count += 1
         print(f'Progress: {count}/{len(dataset) + args.start_idx}')
