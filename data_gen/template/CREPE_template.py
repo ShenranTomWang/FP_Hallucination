@@ -25,12 +25,19 @@ class CREPEFeedbackActionTemplate(FeedbackActionTemplate):
         question: str,
         model_detected_presuppositions: str,
         few_shot_data: List[Dict],
+        labels: List[str],
         system_role: str = "system",
         model_role: str = "assistant",
         user_role: str = "user",
         **kwargs
     ):
-        few_shot_data = [{**dp, "presuppositions": dp["presuppositions"]} for dp in few_shot_data]
+        few_shot_data = [
+            {
+                **dp,
+                "presuppositions": dp["presuppositions"],
+                "is_normal": dp["labels"][0] == "normal"
+            } for dp in few_shot_data
+        ]
         model_detected_presuppositions = model_detected_presuppositions["presuppositions"]
         super().__init__(
             question=question,
