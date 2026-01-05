@@ -92,3 +92,25 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
             return bert_score_f1(self.model_detected_presuppositions, [presuppositions.strip() for presuppositions in self.presuppositions])
         
         return mean(bleurt_f1s) if len(bleurt_f1s) > 0 else 0.0
+    
+class CREPEFinalAnswerEvaluator(Evaluator):
+    def __init__(
+        self,
+        comment: str,
+        model_final_answer: str,
+        **kwargs
+    ):
+        self.comment = comment.strip()
+        self.model_final_answer = model_final_answer.strip()
+    
+    def evaluate_rouge1_f1(self):
+        return rouge1_f1(self.model_final_answer, [self.comment])
+    
+    def evaluate_rougeL_f1(self):
+        return rougeL_f1(self.model_final_answer, [self.comment])
+    
+    def evaluate_bleurt_f1(self):
+        return bleurt_score([self.model_final_answer], [self.comment])
+    
+    def evaluate_bert_score_f1(self):
+        return bert_score_f1([self.model_final_answer], [self.comment])

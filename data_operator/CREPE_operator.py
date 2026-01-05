@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate, CREPEDirectQATemplate
-from evaluator import CREPEPresuppositionExtractionEvaluator
+from evaluator import CREPEPresuppositionExtractionEvaluator, CREPEFinalAnswerEvaluator
 from .data_operator import DataOperator
 import random, os
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse, CREPEDirectQAResponse
@@ -184,7 +184,7 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         super().__init__()
         
     def evaluate(self, eval_dp: dict, **kwargs) -> tuple:
-        raise NotImplementedError("Feedback Action evaluation is not implemented.")
+        raise NotImplementedError("Feedback Action evaluation is not supported.")
     
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
@@ -200,8 +200,19 @@ class CREPEDirectQAOperator(CREPEOperator):
         self.answer_key = "model_answer"
         super().__init__()
         
-    def evaluate(self, eval_dp: dict, **kwargs) -> tuple:
-        raise NotImplementedError("Feedback Action evaluation is not implemented.")
+    def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
+        evaluator = CREPEFinalAnswerEvaluator(**eval_dp)
+        rouge1_f1 = evaluator.evaluate_rouge1_f1()
+        rougeL_f1 = evaluator.evaluate_rougeL_f1()
+        if run_bert_score:
+            bert_score_f1 = evaluator.evaluate_bert_score_f1()
+        else:
+            bert_score_f1 = None
+        if run_bleurt:
+            bleurt_f1 = evaluator.evaluate_bleurt_f1()
+        else:
+            bleurt_f1 = None
+        return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
     
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
