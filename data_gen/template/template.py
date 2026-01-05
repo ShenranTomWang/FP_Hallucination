@@ -89,7 +89,7 @@ class FeedbackActionFewShotExample(Template):
         else:
             feedback = f"The question contains false presuppositions that {'; '.join(self.presuppositions)}."
             action = f"Correct the false assumptions that {'; '.join(self.presuppositions)} and respond based on the corrected assumption."
-        content = f"Feedback: {feedback}\nAction: {action}\n"
+        content = f"Feedback: {feedback}\nAction: {action}"
         return [
             {
                 "role": self.user_role,
