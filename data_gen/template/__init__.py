@@ -6,6 +6,6 @@ __all__ = [
     "Template",
     "CREPEPresuppositionExtractionTemplate",
     "CREPEFeedbackActionTemplate",
-    "CREPEFinalAnswerTemplate"
-    "DirectQATemplate"
+    "CREPEFinalAnswerTemplate",
+    "CREPEDirectQATemplate"
 ]

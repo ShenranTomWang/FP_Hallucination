@@ -1,4 +1,4 @@
-from .template import PresuppositionExtractionTemplate, FeedbackActionTemplate, FinalAnswerTemplate
+from .template import PresuppositionExtractionTemplate, FeedbackActionTemplate, FinalAnswerTemplate, DirectQATemplate
 from typing import List, Dict
         
 class CREPEPresuppositionExtractionTemplate(PresuppositionExtractionTemplate):
@@ -63,6 +63,25 @@ class CREPEFinalAnswerTemplate(FinalAnswerTemplate):
         super().__init__(
             question=question,
             model_feedback_action=model_feedback_action,
+            few_shot_data=few_shot_data,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )
+
+class CREPEDirectQATemplate(DirectQATemplate):
+    def __init__(
+        self,
+        question: str,
+        few_shot_data: List[Dict],
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ):
+        few_shot_data = [{**dp, "answer": dp["comment"]} for dp in few_shot_data]
+        super().__init__(
+            question=question,
             few_shot_data=few_shot_data,
             system_role=system_role,
             model_role=model_role,

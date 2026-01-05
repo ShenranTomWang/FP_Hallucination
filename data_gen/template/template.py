@@ -200,3 +200,48 @@ class FinalAnswerTemplate(Template):
             }
         ]
         return messages
+    
+class DirectQAFewShotExample(Template):
+    question: str
+    answer: str
+    user_role: str
+    model_role: str
+    
+    def __init__(self, question: str, answer: str, user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.question = question
+        self.answer = answer
+        self.user_role = user_role
+        self.model_role = model_role
+        
+    def generate(self, **kwargs) -> List[Dict]:
+        return [
+            {
+                "role": self.user_role,
+                "content": self.question
+            },
+            {
+                "role": self.model_role,
+                "content": self.answer
+            }
+        ]
+
+class DirectQATemplate(Template):
+    def __init__(self, question: str, few_shot_data: List[Dict], system_role: str = "system", **kwargs):
+        self.question = question
+        self.system_role = system_role
+        self.few_shot_data = []
+        for dp in few_shot_data:
+            self.few_shot_data += DirectQAFewShotExample(**dp, user_role=self.user_role, model_role=self.model_role).generate()
+        
+    def generate(self, **kwargs):
+        messages = [
+            {
+                "role": self.system_role,
+                "content": f"""
+                    You are a helpful assistant that answer questions based on your knowledge.
+                    The user will ask a question, and you need to provide the answer to that question.
+                """
+            },
+            {"role": "user", "content": self.question}
+        ]
+        return messages

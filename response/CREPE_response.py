@@ -36,3 +36,11 @@ class CREPEFinalAnswerResponse(CREPEResponse):
     def model_validate_plain_text(cls, text: str):
         text = text.lower().replace("assistant\n", "")
         return cls(answer=text.strip())
+    
+class CREPEDirectQAResponse(CREPEResponse):
+    answer: str
+    
+    @classmethod
+    def model_validate_plain_text(cls, text: str):
+        text = text.lower().replace("assistant\n", "")
+        return cls(answer=text.strip())
