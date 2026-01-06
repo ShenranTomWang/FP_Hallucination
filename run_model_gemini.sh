@@ -20,6 +20,13 @@ python run_model.py \
         --dataset_path /ubc/cs/home/s/shenranw/scratch/datasets/CREPE/dev.jsonl
 
 python run_model.py \
+    gemini \
+        --model gemini-2.5-flash \
+        --operator CREPEDirectQAOperator \
+        --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
+        --dataset_path /ubc/cs/home/s/shenranw/scratch/datasets/CREPE/dev.jsonl
+
+python run_model.py \
     align_responses \
         --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl \
         --operator CREPEPresuppositionExtractionOperator \
