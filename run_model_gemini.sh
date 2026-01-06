@@ -50,7 +50,8 @@ python run_model.py \
     evaluate \
         --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl \
         --operator CREPEPresuppositionExtractionOperator \
-        --show_top_bottom_k 20
+        --show_top_bottom_k 20 \
+        --run_bert_score
 
 python run_model.py \
     evaluate \
