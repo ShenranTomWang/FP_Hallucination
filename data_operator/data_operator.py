@@ -100,15 +100,15 @@ class DataOperator(ABC):
         pass 
 
     @abstractmethod
-    def evaluate(self, eval_dp: dict, run_bleurt: bool) -> tuple:
-        """Evaluate a data point with ROUGE1-F1, ROUGEL-F1 and BleuRT (optional)
+    def evaluate(self, eval_dp: dict, **kwargs) -> Dict:
+        """Evaluate a data point with ROUGE1-F1, ROUGEL-F1
 
         Args:
             eval_dp (dict): datapoint for evaluation
-            run_bleurt (bool): whether to run BLEURT evaluation
+            **kwargs: additional arguments
 
         Returns:
-            dict: evaluation results, ROUGE1-F1, ROUGEL-F1, BLEURT (if run_bleurt is True)
+            dict: evaluation results stored as keys in eval_dp
         """
         pass
     
@@ -117,7 +117,7 @@ class DataOperator(ABC):
         pass
 
     @abstractmethod
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: bool):
+    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: str | None):
         """Save the top and bottom k data points based on a specific score.
 
         Args:
@@ -125,6 +125,6 @@ class DataOperator(ABC):
             score_key (str): The key to use for scoring, one of 'rouge1_f1', 'rougeL_f1', 'bleurt_f1'.
             k (int): The number of top/bottom entries to save.
             out_dir (str): The directory to save the results.
-            use_aligned (bool): Whether to use aligned responses for evaluation.
+            use_aligned (str | None): Whether to use aligned responses for evaluation.
         """
         pass

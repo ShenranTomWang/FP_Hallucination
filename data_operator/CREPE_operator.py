@@ -7,6 +7,7 @@ import random, os
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse
 from pydantic import BaseModel
 from evaluator.utils import bert_score_f1
+from typing import Dict
 
 class CREPEOperator(DataOperator):
     answer_key: str
@@ -15,7 +16,7 @@ class CREPEOperator(DataOperator):
     def __init__(self):
         self.exclude_domains = ['reddit.com']
         
-    def parse_response_openai(self, response: dict | str, save_dp: dict, **kwargs) -> dict:
+    def parse_response_openai(self, response: Dict | str, save_dp: Dict, **kwargs) -> Dict:
         if isinstance(response, str):
             save_dp[self.answer_key] = response
         else:
@@ -23,7 +24,7 @@ class CREPEOperator(DataOperator):
         save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key]).model_dump()
         return save_dp
     
-    def parse_response_gemini(self, response: dict | str, save_dp: dict, **kwargs) -> dict:
+    def parse_response_gemini(self, response: Dict | str, save_dp: Dict, **kwargs) -> Dict:
         if isinstance(response, str):
             save_dp[self.answer_key] = response
         else:
@@ -31,7 +32,7 @@ class CREPEOperator(DataOperator):
         save_dp[self.answer_key] = self.response_cls.model_validate_plain_text(save_dp[self.answer_key]).model_dump()
         return save_dp
     
-    def parse_response_transformers(self, response: BaseModel, save_dp: dict, **kwargs) -> dict:
+    def parse_response_transformers(self, response: BaseModel, save_dp: Dict, **kwargs) -> Dict:
         save_dp[self.answer_key] = response.model_dump()
         return save_dp
 
@@ -63,7 +64,7 @@ class CREPEOperator(DataOperator):
         score_key: str,
         k: int,
         out_dir: str,
-        use_aligned: str | None,
+        use_aligned: str | None = None,
         fname: str = 'top_{}_{}_{}.txt'
     ):
         key = f'{self.answer_key}_aligned_{use_aligned}' if use_aligned and use_aligned == 'precision' else self.answer_key
@@ -105,8 +106,27 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         self.response_cls = CREPEPresuppositionExtractionResponse
         self.answer_key = "model_detected_presuppositions"
         super().__init__()
+        
+    def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
+        if eval_dp.get(self.answer_key) is None:
+            eval_dp['rouge1_f1_precision'], eval_dp['rouge1_f1_recall'] = 0, 0
+            eval_dp['rougeL_f1_precision'], eval_dp['rougeL_f1_recall'] = 0, 0
+            if run_bleurt:
+                eval_dp['bleurt_f1_precision'], eval_dp['bleurt_f1_recall'] = 0, 0
+            if run_bert_score:
+                eval_dp['bert_score_f1_precision'], eval_dp['bert_score_f1_recall'] = 0, 0
+            return eval_dp
+        eval_dp['rouge1_f1_precision'], eval_dp['rougeL_f1_precision'], bleurt_f1_precision, bert_score_f1_precision = self._evaluate(eval_dp, run_bleurt=run_bleurt, run_bert_score=run_bert_score, use_aligned="precision")
+        eval_dp['rouge1_f1_recall'], eval_dp['rougeL_f1_recall'], bleurt_f1_recall, bert_score_f1_recall = self._evaluate(eval_dp, run_bleurt=run_bleurt, run_bert_score=run_bert_score, use_aligned="recall")
+        if run_bleurt:
+            eval_dp['bleurt_f1_precision'] = bleurt_f1_precision
+            eval_dp['bleurt_f1_recall'] = bleurt_f1_recall
+        if run_bert_score:
+            eval_dp['bert_score_f1_precision'] = bert_score_f1_precision
+            eval_dp['bert_score_f1_recall'] = bert_score_f1_recall
+        return eval_dp
 
-    def evaluate(self, eval_dp: dict, run_bleurt: bool, run_bert_score: bool, use_aligned: str | None) -> tuple:
+    def _evaluate(self, eval_dp: Dict, run_bleurt: bool, run_bert_score: bool, use_aligned: str | None) -> tuple:
         evaluator = CREPEPresuppositionExtractionEvaluator(**eval_dp, use_aligned=use_aligned)
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
@@ -120,7 +140,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
             bert_score_f1 = None
         return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
 
-    def align_response(self, dp: dict, model_type: str = None, **kwargs) -> dict:
+    def align_response(self, dp: Dict, model_type: str = None, **kwargs) -> Dict:
         presuppositions_gt = dp['presuppositions']
         presuppositions = dp.get(self.answer_key, {}).get('presuppositions', [])
         aligned_map = dict()
@@ -155,7 +175,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         dp['presuppositions_aligned_recall'] = list(aligned_map.values())
         return dp
 
-    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+    def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
         template = CREPEPresuppositionExtractionTemplate(**raw_dp, **kwargs)
         return template.generate()
 
@@ -166,13 +186,13 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         self.answer_key = "model_feedback_action"
         super().__init__()
         
-    def evaluate(self, eval_dp: dict, **kwargs) -> tuple:
+    def evaluate(self, eval_dp: Dict, **kwargs) -> Dict:
         raise NotImplementedError("Feedback Action evaluation is not implemented.")
         
-    def align_response(self, dp: dict, **kwargs) -> dict:
+    def align_response(self, dp: Dict, **kwargs) -> Dict:
         return dp
 
-    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+    def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
         template = CREPEFeedbackActionTemplate(**raw_dp, **kwargs)
         return template.generate()
     
@@ -182,16 +202,12 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         self.response_cls = CREPEFinalAnswerResponse
         self.answer_key = "model_final_answer"
         super().__init__()
-        
-    def evaluate(self, eval_dp: dict, **kwargs) -> tuple:
-        raise NotImplementedError("Feedback Action evaluation is not supported.")
     
-    def align_response(self, dp: dict, **kwargs) -> dict:
+    def align_response(self, dp: Dict, **kwargs) -> Dict:
         return dp
 
-    def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
-        eval_dp[self.answer_key] = eval_dp[self.answer_key]['answer']
-        evaluator = CREPEFinalAnswerEvaluator(**eval_dp)
+    def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
+        evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bert_score:
@@ -202,9 +218,15 @@ class CREPEFinalAnswerOperator(CREPEOperator):
             bleurt_f1 = evaluator.evaluate_bleurt_f1()
         else:
             bleurt_f1 = None
-        return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
+        eval_dp['rouge1_f1'] = rouge1_f1
+        eval_dp['rougeL_f1'] = rougeL_f1
+        if run_bleurt:
+            eval_dp['bleurt_f1'] = bleurt_f1
+        if run_bert_score:
+            eval_dp['bert_score_f1'] = bert_score_f1
+        return eval_dp
     
-    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+    def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
         template = CREPEFinalAnswerTemplate(**raw_dp, **kwargs)
         return template.generate()
     
@@ -215,9 +237,8 @@ class CREPEDirectQAOperator(CREPEOperator):
         self.answer_key = "model_answer"
         super().__init__()
         
-    def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
-        eval_dp[self.answer_key] = eval_dp[self.answer_key]['answer']
-        evaluator = CREPEFinalAnswerEvaluator(**eval_dp)
+    def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
+        evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bert_score:
@@ -228,11 +249,17 @@ class CREPEDirectQAOperator(CREPEOperator):
             bleurt_f1 = evaluator.evaluate_bleurt_f1()
         else:
             bleurt_f1 = None
-        return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
+        eval_dp['rouge1_f1'] = rouge1_f1
+        eval_dp['rougeL_f1'] = rougeL_f1
+        if run_bleurt:
+            eval_dp['bleurt_f1'] = bleurt_f1
+        if run_bert_score:
+            eval_dp['bert_score_f1'] = bert_score_f1
+        return eval_dp
     
-    def align_response(self, dp: dict, **kwargs) -> dict:
+    def align_response(self, dp: Dict, **kwargs) -> Dict:
         return dp
     
-    def prepare_message(self, raw_dp: dict, **kwargs) -> str:
+    def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
         template = CREPEDirectQATemplate(**raw_dp, **kwargs)
         return template.generate()

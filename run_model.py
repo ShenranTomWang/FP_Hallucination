@@ -55,19 +55,20 @@ def run_print_examples(args):
             f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
             f.write('-' * 40 + '\n')
             
-def _avg_report(args, data: list, measure: str):
-    rouge1_f1_key = f'rouge1_f1_{measure}'
-    rougeL_f1_key = f'rougeL_f1_{measure}'
+def _avg_report(args, data: list, measure: str = ''):
+    _measure = f'_{measure}' if measure != '' else ''
+    rouge1_f1_key = f'rouge1_f1{_measure}'
+    rougeL_f1_key = f'rougeL_f1{_measure}'
     avg_rouge1 = np.mean([dp[rouge1_f1_key] for dp in data if dp.get(rouge1_f1_key) is not None])
     avg_rougeL = np.mean([dp[rougeL_f1_key] for dp in data if dp.get(rougeL_f1_key) is not None])
     print(f'Average ROUGE-1 F1 {measure.capitalize()}: {avg_rouge1:.4f}')
     print(f'Average ROUGE-L F1 {measure.capitalize()}: {avg_rougeL:.4f}')
     if args.run_bleurt:
-        bleurt_key = f'bleurt_f1_{measure}'
+        bleurt_key = f'bleurt_f1{_measure}'
         avg_bleurt = np.mean([dp[bleurt_key] for dp in data if dp.get(bleurt_key) is not None])
         print(f'Average BLEURT F1 {measure.capitalize()}: {avg_bleurt:.4f}')
     if args.run_bert_score:
-        bert_score_key = f'bert_score_f1_{measure}'
+        bert_score_key = f'bert_score_f1{_measure}'
         avg_bert_score = np.mean([dp[bert_score_key] for dp in data if dp.get(bert_score_key) is not None])
         print(f'Average BERTScore F1 {measure.capitalize()}: {avg_bert_score:.4f}')
 
@@ -75,28 +76,14 @@ def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
     for dp in tqdm(data, desc='Evaluating'):
-        if dp.get(operator.answer_key) is None:
-            dp['rouge1_f1_precision'], dp['rouge1_f1_recall'] = 0, 0
-            dp['rougeL_f1_precision'], dp['rougeL_f1_recall'] = 0, 0
-            if args.run_bleurt:
-                dp['bleurt_f1_precision'], dp['bleurt_f1_recall'] = 0, 0
-            if args.run_bert_score:
-                dp['bert_score_f1_precision'], dp['bert_score_f1_recall'] = 0, 0
-            continue
-        dp['rouge1_f1_precision'], dp['rougeL_f1_precision'], bleurt_f1_precision, bert_score_f1_precision = operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, use_aligned="precision")
-        dp['rouge1_f1_recall'], dp['rougeL_f1_recall'], bleurt_f1_recall, bert_score_f1_recall = operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, use_aligned="recall")
-        if args.run_bleurt:
-            dp['bleurt_f1_precision'] = bleurt_f1_precision
-            dp['bleurt_f1_recall'] = bleurt_f1_recall
-        if args.run_bert_score:
-            dp['bert_score_f1_precision'] = bert_score_f1_precision
-            dp['bert_score_f1_recall'] = bert_score_f1_recall
+        operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
 
     _avg_report(args, data, 'precision')
     _avg_report(args, data, 'recall')
+    _avg_report(args, data)
     
     if args.show_top_bottom_k > 0:
         k = args.show_top_bottom_k
@@ -104,6 +91,8 @@ def run_evaluate(args, operator: data_operator.DataOperator):
             operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file), use_aligned='precision')
         for score_key in ['rouge1_f1_recall', 'rougeL_f1_recall'] + (['bleurt_f1_recall'] if args.run_bleurt else []) + (['bert_score_f1_recall'] if args.run_bert_score else []):
             operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file), use_aligned='recall')
+        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if args.run_bleurt else []) + (['bert_score_f1'] if args.run_bert_score else []):
+            operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file))
 
 def run_align_responses(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
