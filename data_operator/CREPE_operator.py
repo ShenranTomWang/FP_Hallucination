@@ -215,7 +215,7 @@ class CREPEDirectQAOperator(CREPEOperator):
         super().__init__()
         
     def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
-        evaluator = CREPEFinalAnswerEvaluator(**eval_dp)
+        evaluator = CREPEFinalAnswerEvaluator(**eval_dp, model_final_answer=eval_dp[self.answer_key])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bert_score:
