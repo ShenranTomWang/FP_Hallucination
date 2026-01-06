@@ -4,7 +4,7 @@ from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedba
 from evaluator import CREPEPresuppositionExtractionEvaluator, CREPEFinalAnswerEvaluator
 from .data_operator import DataOperator
 import random, os
-from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse, CREPEDirectQAResponse
+from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse
 from pydantic import BaseModel
 from evaluator.utils import bert_score_f1
 
@@ -190,7 +190,7 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         return dp
 
     def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
-        evaluator = CREPEFinalAnswerEvaluator(**eval_dp)
+        evaluator = CREPEFinalAnswerEvaluator(**eval_dp, model_final_answer=eval_dp[self.answer_key]['answer'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bert_score:
@@ -210,12 +210,12 @@ class CREPEFinalAnswerOperator(CREPEOperator):
 class CREPEDirectQAOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Direct_QA"
-        self.response_cls = CREPEDirectQAResponse
+        self.response_cls = CREPEFinalAnswerResponse
         self.answer_key = "model_answer"
         super().__init__()
         
     def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
-        evaluator = CREPEFinalAnswerEvaluator(**eval_dp, model_final_answer=eval_dp[self.answer_key])
+        evaluator = CREPEFinalAnswerEvaluator(**eval_dp, model_final_answer=eval_dp[self.answer_key]['answer'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         if run_bert_score:
