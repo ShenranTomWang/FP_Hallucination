@@ -80,10 +80,7 @@ def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
-
-    _avg_report(args, data, 'precision')
-    _avg_report(args, data, 'recall')
-    _avg_report(args, data)
+    operator.print_eval_result(data, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
     
     if args.show_top_bottom_k > 0:
         k = args.show_top_bottom_k

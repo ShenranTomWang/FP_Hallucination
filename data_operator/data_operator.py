@@ -10,6 +10,11 @@ class DataOperator(ABC):
     response_cls: Response
     exclude_domains: List[str] = []
     
+    @staticmethod
+    @abstractmethod
+    def print_eval_result(data: List[dict], **kwargs):
+        pass
+    
     @abstractmethod
     def align_response(self, dp: dict, **kwargs) -> dict:
         pass
@@ -117,7 +122,7 @@ class DataOperator(ABC):
         pass
 
     @abstractmethod
-    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, use_aligned: str | None):
+    def save_top_bottom_k(self, data: list, score_key: str, k: int, out_dir: str, fname: str, **kwargs):
         """Save the top and bottom k data points based on a specific score.
 
         Args:
@@ -125,6 +130,7 @@ class DataOperator(ABC):
             score_key (str): The key to use for scoring, one of 'rouge1_f1', 'rougeL_f1', 'bleurt_f1'.
             k (int): The number of top/bottom entries to save.
             out_dir (str): The directory to save the results.
-            use_aligned (str | None): Whether to use aligned responses for evaluation.
+            fname (str): The filename pattern to use for saving.
+            **kwargs: Additional arguments.
         """
         pass

@@ -7,7 +7,25 @@ import random, os
 from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse
 from pydantic import BaseModel
 from evaluator.utils import bert_score_f1
-from typing import Dict
+from typing import Dict, List
+import numpy as np
+
+def _avg_report(data: List[Dict], measure: str = '', run_bleurt: bool = False, run_bert_score: bool = False):
+    _measure = f'_{measure}' if measure != '' else ''
+    rouge1_f1_key = f'rouge1_f1{_measure}'
+    rougeL_f1_key = f'rougeL_f1{_measure}'
+    avg_rouge1 = np.mean([dp[rouge1_f1_key] for dp in data if dp.get(rouge1_f1_key) is not None])
+    avg_rougeL = np.mean([dp[rougeL_f1_key] for dp in data if dp.get(rougeL_f1_key) is not None])
+    print(f'Average ROUGE-1 F1 {measure.capitalize()}: {avg_rouge1:.4f}')
+    print(f'Average ROUGE-L F1 {measure.capitalize()}: {avg_rougeL:.4f}')
+    if run_bleurt:
+        bleurt_key = f'bleurt_f1{_measure}'
+        avg_bleurt = np.mean([dp[bleurt_key] for dp in data if dp.get(bleurt_key) is not None])
+        print(f'Average BLEURT F1 {measure.capitalize()}: {avg_bleurt:.4f}')
+    if run_bert_score:
+        bert_score_key = f'bert_score_f1{_measure}'
+        avg_bert_score = np.mean([dp[bert_score_key] for dp in data if dp.get(bert_score_key) is not None])
+        print(f'Average BERTScore F1 {measure.capitalize()}: {avg_bert_score:.4f}')
 
 class CREPEOperator(DataOperator):
     answer_key: str
@@ -58,54 +76,16 @@ class CREPEOperator(DataOperator):
                     f.write(json.dumps(dp) + '\n')
         return dataset
 
-    def save_top_bottom_k(
-        self,
-        data: list,
-        score_key: str,
-        k: int,
-        out_dir: str,
-        use_aligned: str | None = None,
-        fname: str = 'top_{}_{}_{}.txt'
-    ):
-        key = f'{self.answer_key}_aligned_{use_aligned}' if use_aligned and use_aligned == 'precision' else self.answer_key
-        sorted_data = sorted(
-            [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
-            key=lambda x: x[score_key]
-        )
-        sorted_data = [dp for dp in sorted_data if len(dp['presuppositions']) > 0]
-        with open(os.path.join(out_dir, fname.format(k, score_key, self.action_name)), 'w') as f:
-            for dp in sorted_data[-k:][::-1]:
-                f.write(f'{score_key}: {dp[score_key]:.4f}\n')
-                f.write(f'id: {dp["id"]}\n')
-                f.write(f'Question: {dp["question"]}\n')
-                f.write(f'Comment: {dp.get("comment", "")}\n')
-                f.write(f'GT Presuppositions: {dp["presuppositions"]}\n')
-                if use_aligned == 'recall':
-                    f.write(f'GT Presuppositions (aligned): {dp.get("presuppositions_aligned_recall", [])}\n')
-                if use_aligned == 'precision':
-                    f.write(f'Model Answer (Aligned): {dp[key]}\n')
-                f.write(f'Model Answer: {dp[self.answer_key]}\n')
-                f.write('-' * 20 + '\n\n')
-        with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
-            for dp in sorted_data[:k]:
-                f.write(f'{score_key}: {dp[score_key]:.4f}\n')
-                f.write(f'id: {dp["id"]}\n')
-                f.write(f'Question: {dp["question"]}\n')
-                f.write(f'Comment: {dp.get("comment", "")}\n')
-                f.write(f'GT Presuppositions: {dp["presuppositions"]}\n')
-                if use_aligned == 'recall':
-                    f.write(f'GT Presuppositions (aligned): {dp.get("presuppositions_aligned_recall", [])}\n')
-                if use_aligned == 'precision':
-                    f.write(f'Model Answer (Aligned): {dp[key]}\n')
-                f.write(f'Model Answer: {dp[self.answer_key]}\n')
-                f.write('-' * 20 + '\n\n')
-
 class CREPEPresuppositionExtractionOperator(CREPEOperator):
     def __init__(self):
         self.action_name = "CREPE_Presupposition_Extraction"
         self.response_cls = CREPEPresuppositionExtractionResponse
         self.answer_key = "model_detected_presuppositions"
         super().__init__()
+        
+    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
+        _avg_report(data=data, measure='precision', run_bleurt=run_bleurt, run_bert_score=run_bert_score)
+        _avg_report(data=data, measure='recall', run_bleurt=run_bleurt, run_bert_score=run_bert_score)
         
     def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
         if eval_dp.get(self.answer_key) is None:
@@ -139,6 +119,42 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         else:
             bert_score_f1 = None
         return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
+    
+    def save_top_bottom_k(
+        self,
+        data: List[Dict],
+        score_key: str,
+        k: int,
+        out_dir: str,
+        use_aligned: str | None = None,
+        **kwargs
+    ):
+        key = f'{self.answer_key}_aligned_{use_aligned}' if use_aligned and use_aligned == 'precision' else self.answer_key
+        sorted_data = sorted(
+            [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
+            key=lambda x: x[score_key]
+        )
+        
+        def pretty_print(dp: Dict, f, score_key: str):
+            f.write(f'{score_key}: {dp[score_key]:.4f}\n')
+            f.write(f'id: {dp["id"]}\n')
+            f.write(f'Question: {dp["question"]}\n')
+            f.write(f'Comment: {dp.get("comment", "")}\n')
+            f.write(f'GT Presuppositions: {dp["presuppositions"]}\n')
+            if use_aligned == 'recall':
+                f.write(f'GT Presuppositions (aligned): {dp.get("presuppositions_aligned_recall", [])}\n')
+            if use_aligned == 'precision':
+                f.write(f'Model Answer (Aligned): {dp[key]}\n')
+            f.write(f'Model Answer: {dp[self.answer_key]}\n')
+            f.write('-' * 20 + '\n\n')
+
+        sorted_data = [dp for dp in sorted_data if 'false_presupposition' in dp['labels']]
+        with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+            for dp in sorted_data[-k:][::-1]:
+                pretty_print(dp, f, score_key)
+        with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+            for dp in sorted_data[:k]:
+                pretty_print(dp, f, score_key)
 
     def align_response(self, dp: Dict, model_type: str = None, **kwargs) -> Dict:
         presuppositions_gt = dp['presuppositions']
@@ -186,8 +202,14 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         self.answer_key = "model_feedback_action"
         super().__init__()
         
+    def print_eval_result(data: List[Dict], **kwargs):
+        raise NotImplementedError("Feedback Action evaluation is not supported.")
+        
+    def save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
+        raise NotImplementedError("Feedback Action evaluation is not supported.")
+    
     def evaluate(self, eval_dp: Dict, **kwargs) -> Dict:
-        raise NotImplementedError("Feedback Action evaluation is not implemented.")
+        raise NotImplementedError("Feedback Action evaluation is not supported.")
         
     def align_response(self, dp: Dict, **kwargs) -> Dict:
         return dp
@@ -202,6 +224,35 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         self.response_cls = CREPEFinalAnswerResponse
         self.answer_key = "model_final_answer"
         super().__init__()
+        
+    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
+        _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score)
+        
+    def save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
+        key = self.answer_key
+        sorted_data = sorted(
+            [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
+            key=lambda x: x[score_key]
+        )
+        
+        def pretty_print(dp: Dict, f, score_key: str):
+            f.write(f'{score_key}: {dp[score_key]:.4f}\n')
+            f.write(f'id: {dp["id"]}\n')
+            f.write(f'Question: {dp["question"]}\n')
+            f.write(f'Comment: {dp.get("comment", "")}\n')
+            f.write(f'GT Presuppositions: {dp["presuppositions"]}\n')
+            f.write(f'Model Detected Presuppositions: {dp["model_detected_presuppositions"]["presuppositions"]}\n')
+            f.write(f'Model Action Feedback: {dp["model_feedback_action"]["feedback_action"]}\n')
+            f.write(f'Model Answer: {dp[self.answer_key]}\n')
+            f.write('-' * 20 + '\n\n')
+
+        sorted_data = [dp for dp in sorted_data if 'false_presupposition' in dp['labels']]
+        with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+            for dp in sorted_data[-k:][::-1]:
+                pretty_print(dp, f, score_key)
+        with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+            for dp in sorted_data[:k]:
+                pretty_print(dp, f, score_key)
     
     def align_response(self, dp: Dict, **kwargs) -> Dict:
         return dp
@@ -236,7 +287,34 @@ class CREPEDirectQAOperator(CREPEOperator):
         self.response_cls = CREPEFinalAnswerResponse
         self.answer_key = "model_answer"
         super().__init__()
+    
+    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
+        _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score)
         
+    def save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
+        key = self.answer_key
+        sorted_data = sorted(
+            [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
+            key=lambda x: x[score_key]
+        )
+        
+        def pretty_print(dp: Dict, f, score_key: str):
+            f.write(f'{score_key}: {dp[score_key]:.4f}\n')
+            f.write(f'id: {dp["id"]}\n')
+            f.write(f'Question: {dp["question"]}\n')
+            f.write(f'Comment: {dp.get("comment", "")}\n')
+            f.write(f'GT Presuppositions: {dp["presuppositions"]}\n')
+            f.write(f'Model Answer: {dp[self.answer_key]}\n')
+            f.write('-' * 20 + '\n\n')
+
+        sorted_data = [dp for dp in sorted_data if 'false_presupposition' in dp['labels']]
+        with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+            for dp in sorted_data[-k:][::-1]:
+                pretty_print(dp, f, score_key)
+        with open(os.path.join(out_dir, f'bottom_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
+            for dp in sorted_data[:k]:
+                pretty_print(dp, f, score_key)
+    
     def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
         evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
