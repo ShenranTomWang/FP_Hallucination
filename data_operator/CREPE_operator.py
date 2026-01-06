@@ -188,6 +188,20 @@ class CREPEFinalAnswerOperator(CREPEOperator):
     
     def align_response(self, dp: dict, **kwargs) -> dict:
         return dp
+
+    def evaluate(self, eval_dp: dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> tuple:
+        evaluator = CREPEFinalAnswerEvaluator(**eval_dp)
+        rouge1_f1 = evaluator.evaluate_rouge1_f1()
+        rougeL_f1 = evaluator.evaluate_rougeL_f1()
+        if run_bert_score:
+            bert_score_f1 = evaluator.evaluate_bert_score_f1()
+        else:
+            bert_score_f1 = None
+        if run_bleurt:
+            bleurt_f1 = evaluator.evaluate_bleurt_f1()
+        else:
+            bleurt_f1 = None
+        return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
     
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         template = CREPEFinalAnswerTemplate(**raw_dp, **kwargs)
