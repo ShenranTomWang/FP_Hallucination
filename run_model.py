@@ -290,7 +290,7 @@ if __name__ == '__main__':
     transformers_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for generating prompts, extract responses and evaluate')
     transformers_parser.add_argument('--k', type=int, default=None, help='Number of few-shot examples to use for presupposition extraction')
     transformers_parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu', help='Device to run the model on')
-    transformers_parser.add_argument('--dtype', type=str, default='bfloat16', help='Data type for model parameters')
+    transformers_parser.add_argument('--dtype', type=str, default='bfloat16', choices=['float32', 'float16', 'bfloat16'], help='Data type for model parameters')
     transformers_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     transformers_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
 
