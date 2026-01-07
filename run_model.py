@@ -54,23 +54,6 @@ def run_print_examples(args):
             f.write(f'Comment: {dp["comment"]}\n')
             f.write(f'GT Presuppositions: {"; ".join(dp["presuppositions"])}\n')
             f.write('-' * 40 + '\n')
-            
-def _avg_report(args, data: list, measure: str = ''):
-    _measure = f'_{measure}' if measure != '' else ''
-    rouge1_f1_key = f'rouge1_f1{_measure}'
-    rougeL_f1_key = f'rougeL_f1{_measure}'
-    avg_rouge1 = np.mean([dp[rouge1_f1_key] for dp in data if dp.get(rouge1_f1_key) is not None])
-    avg_rougeL = np.mean([dp[rougeL_f1_key] for dp in data if dp.get(rougeL_f1_key) is not None])
-    print(f'Average ROUGE-1 F1 {measure.capitalize()}: {avg_rouge1:.4f}')
-    print(f'Average ROUGE-L F1 {measure.capitalize()}: {avg_rougeL:.4f}')
-    if args.run_bleurt:
-        bleurt_key = f'bleurt_f1{_measure}'
-        avg_bleurt = np.mean([dp[bleurt_key] for dp in data if dp.get(bleurt_key) is not None])
-        print(f'Average BLEURT F1 {measure.capitalize()}: {avg_bleurt:.4f}')
-    if args.run_bert_score:
-        bert_score_key = f'bert_score_f1{_measure}'
-        avg_bert_score = np.mean([dp[bert_score_key] for dp in data if dp.get(bert_score_key) is not None])
-        print(f'Average BERTScore F1 {measure.capitalize()}: {avg_bert_score:.4f}')
 
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
