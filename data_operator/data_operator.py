@@ -23,7 +23,8 @@ class DataOperator(ABC):
     def prepare_message(self, raw_dp: dict, **kwargs) -> str:
         pass
     
-    def run_transformer_model(
+    @torch.inference_mode()
+    def run_transformers_model(
         self,
         model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
