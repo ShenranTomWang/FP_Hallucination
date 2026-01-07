@@ -120,7 +120,13 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
             bert_score_f1 = None
         return rouge1_f1, rougeL_f1, bleurt_f1, bert_score_f1
     
-    def save_top_bottom_k(
+    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
+        for score_key in ['rouge1_f1_precision', 'rougeL_f1_precision'] + (['bleurt_f1_precision'] if run_bleurt else []) + (['bert_score_f1_precision'] if run_bert_score else []):
+            self._save_top_bottom_k(data, score_key, k, out_dir, use_aligned='precision')
+        for score_key in ['rouge1_f1_recall', 'rougeL_f1_recall'] + (['bleurt_f1_recall'] if run_bleurt else []) + (['bert_score_f1_recall'] if run_bert_score else []):
+            self._save_top_bottom_k(data, score_key, k, out_dir, use_aligned='recall')
+    
+    def _save_top_bottom_k(
         self,
         data: List[Dict],
         score_key: str,
@@ -148,7 +154,7 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
             f.write(f'Model Answer: {dp[self.answer_key]}\n')
             f.write('-' * 20 + '\n\n')
 
-        sorted_data = [dp for dp in sorted_data if 'false_presupposition' in dp['labels']]
+        sorted_data = [dp for dp in sorted_data if 'false presupposition' in dp['labels']]
         with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[-k:][::-1]:
                 pretty_print(dp, f, score_key)
@@ -201,11 +207,12 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         self.response_cls = CREPEFeedbackActionResponse
         self.answer_key = "model_feedback_action"
         super().__init__()
-        
+    
+    @staticmethod
     def print_eval_result(data: List[Dict], **kwargs):
         raise NotImplementedError("Feedback Action evaluation is not supported.")
         
-    def save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
+    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, **kwargs):
         raise NotImplementedError("Feedback Action evaluation is not supported.")
     
     def evaluate(self, eval_dp: Dict, **kwargs) -> Dict:
@@ -225,10 +232,15 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         self.answer_key = "model_final_answer"
         super().__init__()
         
+    @staticmethod
     def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
         _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score)
         
-    def save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
+    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
+        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if run_bleurt else []) + (['bert_score_f1'] if run_bert_score else []):
+            self._save_top_bottom_k(data, score_key, k, out_dir)
+    
+    def _save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
         key = self.answer_key
         sorted_data = sorted(
             [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
@@ -246,7 +258,7 @@ class CREPEFinalAnswerOperator(CREPEOperator):
             f.write(f'Model Answer: {dp[self.answer_key]}\n')
             f.write('-' * 20 + '\n\n')
 
-        sorted_data = [dp for dp in sorted_data if 'false_presupposition' in dp['labels']]
+        sorted_data = [dp for dp in sorted_data if 'false presupposition' in dp['labels']]
         with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[-k:][::-1]:
                 pretty_print(dp, f, score_key)
@@ -288,10 +300,15 @@ class CREPEDirectQAOperator(CREPEOperator):
         self.answer_key = "model_answer"
         super().__init__()
     
+    @staticmethod
     def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
         _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score)
         
-    def save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
+    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
+        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if run_bleurt else []) + (['bert_score_f1'] if run_bert_score else []):
+            self._save_top_bottom_k(data, score_key, k, out_dir)
+    
+    def _save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
         key = self.answer_key
         sorted_data = sorted(
             [dp for dp in data if dp.get(key) is not None and dp.get(score_key) is not None],
@@ -307,7 +324,7 @@ class CREPEDirectQAOperator(CREPEOperator):
             f.write(f'Model Answer: {dp[self.answer_key]}\n')
             f.write('-' * 20 + '\n\n')
 
-        sorted_data = [dp for dp in sorted_data if 'false_presupposition' in dp['labels']]
+        sorted_data = [dp for dp in sorted_data if 'false presupposition' in dp['labels']]
         with open(os.path.join(out_dir, f'top_{k}_{score_key}_{self.action_name}.txt'), 'w') as f:
             for dp in sorted_data[-k:][::-1]:
                 pretty_print(dp, f, score_key)

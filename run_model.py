@@ -80,16 +80,17 @@ def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
-    operator.print_eval_result(data, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
+    operator.print_eval_result(data=data, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
     
     if args.show_top_bottom_k > 0:
-        k = args.show_top_bottom_k
-        for score_key in ['rouge1_f1_precision', 'rougeL_f1_precision'] + (['bleurt_f1_precision'] if args.run_bleurt else []) + (['bert_score_f1_precision'] if args.run_bert_score else []):
-            operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file), use_aligned='precision')
-        for score_key in ['rouge1_f1_recall', 'rougeL_f1_recall'] + (['bleurt_f1_recall'] if args.run_bleurt else []) + (['bert_score_f1_recall'] if args.run_bert_score else []):
-            operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file), use_aligned='recall')
-        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if args.run_bleurt else []) + (['bert_score_f1'] if args.run_bert_score else []):
-            operator.save_top_bottom_k(data, score_key, k, os.path.dirname(args.file))
+        operator.save_top_bottom_k(
+            data=data,
+            k=args.show_top_bottom_k,
+            out_dir=os.path.dirname(args.file),
+            use_aligned='recall',
+            run_bleurt=args.run_bleurt,
+            run_bert_score=args.run_bert_score
+        )
 
 def run_align_responses(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
