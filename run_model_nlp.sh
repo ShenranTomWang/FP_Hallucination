@@ -21,7 +21,7 @@ python run_model.py \
 
 python run_model.py \
     transformers \
-        --dataset_dir /ubc/cs/home/s/shenranw/scratch/datasets \
+        --dataset_path /ubc/cs/home/s/shenranw/scratch/datasets/CREPE/dev.jsonl \
         --model ${HF_HOME}/${MODEL} \
         --operator CREPEPresuppositionExtractionOperator \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out
