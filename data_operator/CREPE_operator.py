@@ -10,7 +10,7 @@ from evaluator.utils import bert_score_f1
 from typing import Dict, List
 import numpy as np
 
-def _avg_report(data: List[Dict], measure: str = '', run_bleurt: bool = False, run_bert_score: bool = False):
+def _avg_report(data: List[Dict], measure: str = '', run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False):
     _measure = f'_{measure}' if measure != '' else ''
     rouge1_f1_key = f'rouge1_f1{_measure}'
     rougeL_f1_key = f'rougeL_f1{_measure}'
@@ -26,6 +26,10 @@ def _avg_report(data: List[Dict], measure: str = '', run_bleurt: bool = False, r
         bert_score_key = f'bert_score_f1{_measure}'
         avg_bert_score = np.mean([dp[bert_score_key] for dp in data if dp.get(bert_score_key) is not None])
         print(f'Average BERTScore F1 {measure.capitalize()}: {avg_bert_score:.4f}')
+    if run_fp_score:
+        fp_score_key = f'fp_score'
+        avg_fp_score = np.mean([dp[fp_score_key] for dp in data if dp.get(fp_score_key) is not None])
+        print(f'Average FP Score {measure.capitalize()}: {avg_fp_score:.4f}')
 
 class CREPEOperator(DataOperator):
     answer_key: str
@@ -233,11 +237,11 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         super().__init__()
         
     @staticmethod
-    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
-        _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score)
+    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs):
+        _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score, run_fp_score=run_fp_score)
         
-    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
-        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if run_bleurt else []) + (['bert_score_f1'] if run_bert_score else []):
+    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs):
+        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if run_bleurt else []) + (['bert_score_f1'] if run_bert_score else []) + (['fp_score'] if run_fp_score else []):
             self._save_top_bottom_k(data, score_key, k, out_dir)
     
     def _save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):
@@ -305,11 +309,11 @@ class CREPEDirectQAOperator(CREPEOperator):
         super().__init__()
     
     @staticmethod
-    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
-        _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score)
+    def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs):
+        _avg_report(data=data, run_bleurt=run_bleurt, run_bert_score=run_bert_score, run_fp_score=run_fp_score)
         
-    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
-        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if run_bleurt else []) + (['bert_score_f1'] if run_bert_score else []):
+    def save_top_bottom_k(self, data: List[Dict], k: int, out_dir: str, run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs):
+        for score_key in ['rouge1_f1', 'rougeL_f1'] + (['bleurt_f1'] if run_bleurt else []) + (['bert_score_f1'] if run_bert_score else []) + (['fp_score'] if run_fp_score else []):
             self._save_top_bottom_k(data, score_key, k, out_dir)
     
     def _save_top_bottom_k(self, data: List[Dict], score_key: str, k: int, out_dir: str, **kwargs):

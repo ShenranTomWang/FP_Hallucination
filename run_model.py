@@ -61,7 +61,7 @@ def run_evaluate(args, operator: data_operator.DataOperator):
         for dp in tqdm(data, desc='Evaluating'):
             operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, run_fp_score=args.run_fp_score)
             f.write(json.dumps(dp) + '\n')
-    operator.print_eval_result(data=data, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
+    operator.print_eval_result(data=data, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, run_fp_score=args.run_fp_score)
     
     if args.show_top_bottom_k > 0:
         operator.save_top_bottom_k(
@@ -70,7 +70,8 @@ def run_evaluate(args, operator: data_operator.DataOperator):
             out_dir=os.path.dirname(args.file),
             use_aligned='recall',
             run_bleurt=args.run_bleurt,
-            run_bert_score=args.run_bert_score
+            run_bert_score=args.run_bert_score,
+            run_fp_score=args.run_fp_score
         )
 
 def run_align_responses(args, operator: data_operator.DataOperator):
