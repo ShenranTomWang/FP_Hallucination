@@ -270,7 +270,13 @@ class CREPEFinalAnswerOperator(CREPEOperator):
         return dp
 
     def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs) -> Dict:
-        evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'])
+        evaluator = CREPEFinalAnswerEvaluator(
+            question=eval_dp['question'],
+            comment=eval_dp['comment'],
+            model_final_answer=eval_dp[self.answer_key]['answer'],
+            presuppositions=eval_dp['presuppositions'],
+            few_shot_data=eval_dp['few_shot_data']
+        )
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         eval_dp['rouge1_f1'] = rouge1_f1
@@ -340,7 +346,13 @@ class CREPEDirectQAOperator(CREPEOperator):
         user_role: str = "user",
         **kwargs
     ) -> Dict:
-        evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'], presuppositions=eval_dp['presuppositions'])
+        evaluator = CREPEFinalAnswerEvaluator(
+            question=eval_dp['question'],
+            comment=eval_dp['comment'],
+            model_final_answer=eval_dp[self.answer_key]['answer'],
+            presuppositions=eval_dp['presuppositions'],
+            few_shot_data=eval_dp.get['few_shot_data']
+        )
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
         eval_dp['rouge1_f1'] = rouge1_f1

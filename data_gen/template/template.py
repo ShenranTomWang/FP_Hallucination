@@ -258,12 +258,14 @@ class DirectQATemplate(Template):
         return messages
     
 class FPScorePresuppositionExtractionFewShotExample(Template):
+    question: str
     answer: str
     presuppositions: List[str]
     user_role: str
     model_role: str
     
-    def __init__(self, answer: str, presuppositions: List[str], user_role: str = "user", model_role: str = "assistant", **kwargs):
+    def __init__(self, question: str, answer: str, presuppositions: List[str], user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.question = question
         self.answer = answer
         self.presuppositions = presuppositions
         self.user_role = user_role
@@ -274,7 +276,7 @@ class FPScorePresuppositionExtractionFewShotExample(Template):
         return [
             {
                 "role": self.user_role,
-                "content": self.answer
+                "content": f"Question: {self.question}\nResponse: {self.answer}"
             },
             {
                 "role": self.model_role,
@@ -283,7 +285,8 @@ class FPScorePresuppositionExtractionFewShotExample(Template):
         ]
 
 class FPScorePresuppositionExtractionTemplate(Template):
-    def __init__(self, model_final_answer: str, few_shot_data: List[str], system_role: str = "system", user_role: str = "user", model_role: str = "assistant", **kwargs):
+    def __init__(self, question: str, model_final_answer: str, few_shot_data: List[str], system_role: str = "system", user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.question = question
         self.model_final_answer = model_final_answer
         self.system_role = system_role
         self.user_role = user_role
@@ -298,15 +301,15 @@ class FPScorePresuppositionExtractionTemplate(Template):
                 "role": self.system_role,
                 "content": f"""
                     You are a helpful assistant that does the following task:
-                    You will be given a piece of text that addresses some false assumptions.
-                    Your task is to extract the presuppositions being addressed in the text.
+                    You will be given a question and a response that addresses some false presuppositions in the question.
+                    Your task is to extract the presuppositions being addressed in the response.
                     Format your response as a list of presuppositions, separated by newlines.
                 """
             },
             *self.few_shot_data,
             {
                 "role": self.user_role,
-                "content": self.model_final_answer
+                "content": f"Question: {self.question}\nResponse: {self.model_final_answer}"
             }
         ]
 

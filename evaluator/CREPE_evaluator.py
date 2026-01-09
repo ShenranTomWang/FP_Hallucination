@@ -99,12 +99,14 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
 class CREPEFinalAnswerEvaluator(Evaluator):
     def __init__(
         self,
+        question: str,
         comment: str,
         model_final_answer: str,
         presuppositions: List[str],
         few_shot_data: List[Dict],
         **kwargs
     ):
+        self.question = question.strip()
         self.comment = comment.strip()
         self.model_final_answer = model_final_answer.strip()
         self.presuppositions = presuppositions
@@ -126,8 +128,10 @@ class CREPEFinalAnswerEvaluator(Evaluator):
         if not self.presuppositions or len(self.presuppositions) == 0:
             return 0
         return fp_score(
+            question=self.question,
             model_final_answer=self.model_final_answer,
             presuppositions=self.presuppositions,
+            few_shot_data=self.few_shot_data,
             system_role=system_role,
             model_role=model_role,
             user_role=user_role

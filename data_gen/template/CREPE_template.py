@@ -35,7 +35,7 @@ class CREPEFeedbackActionTemplate(FeedbackActionTemplate):
             {
                 **dp,
                 "presuppositions": dp["presuppositions"],
-                "is_normal":  "false presuppositions" not in dp["labels"]
+                "is_normal":  "false presupposition" not in dp["labels"]
             } for dp in few_shot_data
         ]
         model_detected_presuppositions = model_detected_presuppositions["presuppositions"]
@@ -64,7 +64,7 @@ class CREPEFinalAnswerTemplate(FinalAnswerTemplate):
                 **dp,
                 "answer": dp["comment"],
                 "presuppositions": dp["presuppositions"],
-                "is_normal": "false presuppositions" not in dp["labels"]
+                "is_normal": "false presupposition" not in dp["labels"]
             } for dp in few_shot_data
         ]
         model_feedback_action = model_feedback_action["feedback_action"]
@@ -99,6 +99,7 @@ class CREPEDirectQATemplate(DirectQATemplate):
 class CREPEFPScorePresuppositionExtractionTemplate(FPScorePresuppositionExtractionTemplate):
     def __init__(
         self,
+        question: str,
         model_final_answer: Dict[str, str],
         few_shot_data: List[Dict],
         system_role: str = "system",
@@ -106,9 +107,9 @@ class CREPEFPScorePresuppositionExtractionTemplate(FPScorePresuppositionExtracti
         user_role: str = "user",
         **kwargs
     ):
-        few_shot_data = [{**dp, "answer": dp["comment"]} for dp in few_shot_data if "false presuppositions" in dp["labels"]]
-        model_final_answer = model_final_answer["answer"]
+        few_shot_data = [{**dp, "answer": dp["comment"]} for dp in few_shot_data if "false presupposition" in dp["labels"]]
         super().__init__(
+            question=question,
             model_final_answer=model_final_answer,
             few_shot_data=few_shot_data,
             system_role=system_role,
@@ -127,7 +128,7 @@ class CREPEFPScoreEntailmentCountingTemplate(FPScoreEntailmentCountingTemplate):
         user_role: str = "user",
         **kwargs
     ):
-        few_shot_data = [dp for dp in few_shot_data if "false presuppositions" in dp["labels"]]
+        few_shot_data = [dp for dp in few_shot_data if "false presupposition" in dp["labels"]]
         answer_extracted_presuppositions = answer_extracted_presuppositions["presuppositions"]
         super().__init__(
             answer_extracted_presuppositions=answer_extracted_presuppositions,

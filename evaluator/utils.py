@@ -86,6 +86,7 @@ def bert_score_f1(
     return F1.mean().item()
 
 def fp_score(
+    question: str,
     model_final_answer: str,
     presuppositions: List[str],
     few_shot_data: List[Dict],
@@ -101,6 +102,7 @@ def fp_score(
         client = genai.Client(vertexai=True)
         __CACHE__["genai_client"] = client
     messages = CREPEFPScorePresuppositionExtractionTemplate(
+        question=question,
         model_final_answer=model_final_answer,
         few_shot_data=few_shot_data,
         system_role=system_role,

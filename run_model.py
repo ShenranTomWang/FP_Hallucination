@@ -58,7 +58,7 @@ def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
     for dp in tqdm(data, desc='Evaluating'):
-        operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
+        operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, run_fp_score=args.run_fp_score)
     with open(args.file, 'w') as f:
         for dp in data:
             f.write(json.dumps(dp) + '\n')
@@ -328,6 +328,7 @@ if __name__ == '__main__':
     evaluate_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for evaluation')
     evaluate_parser.add_argument('--run_bleurt', action='store_true', help='Whether to run BLEURT evaluation (may be slow)')
     evaluate_parser.add_argument('--run_bert_score', action='store_true', help='Whether to run BERTScore evaluation (may be slow)')
+    evaluate_parser.add_argument('--run_fp_score', action='store_true', help='Whether to run FP Score evaluation (may be slow, calling Gemini API)')
     evaluate_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
     
     print_parser = model_subparsers.add_parser('print_examples', help='Print examples from dataset')
