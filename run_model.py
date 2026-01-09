@@ -19,6 +19,9 @@ def main(args):
         args.out_file = os.path.join(args.out_dir, args.out_file)
 
     if args.command == 'evaluate':
+        if args.out_file is None:
+            fnames = args.file.split('.')
+            args.out_file = f"{fnames[0]}_evaluated.{fnames[1]}"
         run_evaluate(args, operator)
         return
     elif args.command == 'print_examples':
@@ -57,7 +60,7 @@ def run_print_examples(args):
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
-    with open(args.file + '_evaluated', 'w') as f:
+    with open(args.out_file, 'w') as f:
         for dp in tqdm(data, desc='Evaluating'):
             operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, run_fp_score=args.run_fp_score)
             f.write(json.dumps(dp) + '\n')
@@ -325,6 +328,7 @@ if __name__ == '__main__':
     
     evaluate_parser = model_subparsers.add_parser('evaluate', help='Evaluate model outputs using specified operator')
     evaluate_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')
+    evaluate_parser.add_argument('--out_file', type=str, default=None, help='Output file to save the evaluated results, defaults to {--file}_evaluated.jsonl')
     evaluate_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for evaluation')
     evaluate_parser.add_argument('--run_bleurt', action='store_true', help='Whether to run BLEURT evaluation (may be slow)')
     evaluate_parser.add_argument('--run_bert_score', action='store_true', help='Whether to run BERTScore evaluation (may be slow)')
