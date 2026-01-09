@@ -28,7 +28,7 @@ def _avg_report(data: List[Dict], measure: str = '', run_bleurt: bool = False, r
         print(f'Average BERTScore F1 {measure.capitalize()}: {avg_bert_score:.4f}')
     if run_fp_score:
         fp_score_key = f'fp_score'
-        avg_fp_score = np.mean([dp[fp_score_key] for dp in data if dp.get(fp_score_key) is not None])
+        avg_fp_score = np.mean([dp[fp_score_key] for dp in data if dp.get(fp_score_key) is not None and "false presupposition" in dp['labels']])
         print(f'Average FP Score {measure.capitalize()}: {avg_fp_score:.4f}')
 
 class CREPEOperator(DataOperator):
