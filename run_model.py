@@ -57,10 +57,9 @@ def run_print_examples(args):
 def run_evaluate(args, operator: data_operator.DataOperator):
     with open(args.file, 'r') as f:
         data = [json.loads(line.strip()) for line in f]
-    for dp in tqdm(data, desc='Evaluating'):
-        operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, run_fp_score=args.run_fp_score)
-    with open(args.file, 'w') as f:
-        for dp in data:
+    with open(args.file + '_evaluated', 'w') as f:
+        for dp in tqdm(data, desc='Evaluating'):
+            operator.evaluate(dp, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score, run_fp_score=args.run_fp_score)
             f.write(json.dumps(dp) + '\n')
     operator.print_eval_result(data=data, run_bleurt=args.run_bleurt, run_bert_score=args.run_bert_score)
     

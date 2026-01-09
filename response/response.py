@@ -6,3 +6,7 @@ class Response(BaseModel):
     @abstractmethod
     def model_validate_plain_text(cls, text: str):
         pass
+    
+    @abstractmethod
+    def get(self):
+        pass

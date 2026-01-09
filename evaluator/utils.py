@@ -5,17 +5,17 @@ from ignite.metrics import RougeL, RougeN
 from google import genai
 from google.genai import types
 from data_gen.template import CREPEFPScoreEntailmentCountingTemplate, CREPEFPScorePresuppositionExtractionTemplate
-from response import Response, CREPEPresuppositionExtractionResponse, CREPEEntailmentCountingResponse
+from response import Response
 
 __CACHE__ = {
     "bleurt_models": None,
     "bert_scorer": {}
 }
 
-def _parse_response_gemini(response_cls: Type[Response], response: Dict | str) -> Dict:
+def _parse_response_gemini(response_cls: Type[Response], response: Dict | str) -> Response:
     if not isinstance(response, str):
         response = response['response']['text']
-    return response_cls.model_validate_plain_text(response).model_dump()
+    return response_cls.model_validate_plain_text(response)
 
 def f1(prec: float, rec: float, eps: float = 1e-12) -> float:
     return 2 * prec * rec / (prec + rec + eps)
@@ -90,6 +90,8 @@ def fp_score(
     model_final_answer: str,
     presuppositions: List[str],
     few_shot_data: List[Dict],
+    intermediate_response_type: Type[Response],
+    final_response_type: Type[Response],
     system_role: str = "system",
     model_role: str = "assistant",
     user_role: str = "user"
@@ -117,10 +119,10 @@ def fp_score(
             system_instruction=messages[0]['content']
         )
     )
-    presuppositions = _parse_response_gemini(CREPEPresuppositionExtractionResponse, response1)
+    response1 = _parse_response_gemini(intermediate_response_type, response1.text)
     messages = CREPEFPScoreEntailmentCountingTemplate(
-        answer_extracted_presuppositions=presuppositions['answer_extracted_presuppositions'],
-        presuppositions=presuppositions['presuppositions'],
+        answer_extracted_presuppositions=response1.get(),
+        presuppositions=presuppositions,
         few_shot_data=few_shot_data,
         system_role=system_role,
         model_role=model_role,
@@ -134,5 +136,5 @@ def fp_score(
             system_instruction=messages[0]['content']
         )
     )
-    entailment_counting = _parse_response_gemini(CREPEEntailmentCountingResponse, response2)
-    return entailment_counting['count'] / len(presuppositions['presuppositions'])
+    entailment_counting = _parse_response_gemini(final_response_type, response2.text).get()
+    return entailment_counting

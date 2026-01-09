@@ -2,6 +2,7 @@ from typing import List, Dict
 from .evaluator import Evaluator
 from .utils import rouge1_f1, rougeL_f1, bleurt_score, bert_score_f1, fp_score
 from numpy import mean
+from response import CREPEPresuppositionExtractionResponse, CREPEEntailmentCountingResponse
 
 class CREPEPresuppositionExtractionEvaluator(Evaluator):
     def __init__(
@@ -124,7 +125,12 @@ class CREPEFinalAnswerEvaluator(Evaluator):
     def evaluate_bert_score_f1(self):
         return bert_score_f1([self.model_final_answer], [self.comment])
     
-    def evaluate_fp_score(self, system_role: str = "system", model_role: str = "assistant", user_role: str = "user") -> int:
+    def evaluate_fp_score(
+        self,
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user"
+    ) -> int:
         if not self.presuppositions or len(self.presuppositions) == 0:
             return 0
         return fp_score(
@@ -134,5 +140,7 @@ class CREPEFinalAnswerEvaluator(Evaluator):
             few_shot_data=self.few_shot_data,
             system_role=system_role,
             model_role=model_role,
-            user_role=user_role
+            user_role=user_role,
+            intermediate_response_type=CREPEPresuppositionExtractionResponse,
+            final_response_type=CREPEEntailmentCountingResponse
         )

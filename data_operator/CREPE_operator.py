@@ -289,7 +289,8 @@ class CREPEFinalAnswerOperator(CREPEOperator):
             eval_dp['bleurt_f1'] = bleurt_f1
         if run_fp_score:    
             fp_score = evaluator.evaluate_fp_score()
-            eval_dp['fp_score'] = fp_score
+            eval_dp['fp_score_raw'] = fp_score
+            eval_dp['fp_score'] = (int(fp_score) / len(eval_dp['presuppositions'])) if len(eval_dp['presuppositions']) > 0 else 0.0
         return eval_dp
     
     def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
@@ -351,7 +352,7 @@ class CREPEDirectQAOperator(CREPEOperator):
             comment=eval_dp['comment'],
             model_final_answer=eval_dp[self.answer_key]['answer'],
             presuppositions=eval_dp['presuppositions'],
-            few_shot_data=eval_dp.get['few_shot_data']
+            few_shot_data=eval_dp['few_shot_data']
         )
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
@@ -365,7 +366,8 @@ class CREPEDirectQAOperator(CREPEOperator):
             eval_dp['bleurt_f1'] = bleurt_f1
         if run_fp_score:
             fp_score = evaluator.evaluate_fp_score(system_role=system_role, model_role=model_role, user_role=user_role)
-            eval_dp['fp_score'] = fp_score
+            eval_dp['fp_score_raw'] = fp_score
+            eval_dp['fp_score'] = (int(fp_score) / len(eval_dp['presuppositions'])) if len(eval_dp['presuppositions']) > 0 else 0.0
         return eval_dp
     
     def align_response(self, dp: Dict, **kwargs) -> Dict:

@@ -129,7 +129,6 @@ class CREPEFPScoreEntailmentCountingTemplate(FPScoreEntailmentCountingTemplate):
         **kwargs
     ):
         few_shot_data = [dp for dp in few_shot_data if "false presupposition" in dp["labels"]]
-        answer_extracted_presuppositions = answer_extracted_presuppositions["presuppositions"]
         super().__init__(
             answer_extracted_presuppositions=answer_extracted_presuppositions,
             presuppositions=presuppositions,

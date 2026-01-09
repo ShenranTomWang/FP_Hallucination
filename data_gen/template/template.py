@@ -324,7 +324,7 @@ class FPScoreEntailmentCountingFewShotExample(Template):
         self.model_role = model_role
 
     def generate(self, **kwargs) -> List[Dict]:
-        content = len(self.presuppositions)
+        content = f"{len(self.presuppositions)}"
         return [
             {
                 "role": self.user_role,
