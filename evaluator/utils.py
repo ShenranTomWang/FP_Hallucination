@@ -1,12 +1,21 @@
-from typing import List, Iterable
+from typing import List, Iterable, Dict, Type
 import evaluate
 from bert_score import BERTScorer
 from ignite.metrics import RougeL, RougeN
+from google import genai
+from google.genai import types
+from data_gen.template import CREPEFPScoreEntailmentCountingTemplate, CREPEFPScorePresuppositionExtractionTemplate
+from response import Response, CREPEPresuppositionExtractionResponse, CREPEEntailmentCountingResponse
 
 __CACHE__ = {
     "bleurt_models": None,
     "bert_scorer": {}
 }
+
+def _parse_response_gemini(response_cls: Type[Response], response: Dict | str) -> Dict:
+    if not isinstance(response, str):
+        response = response['response']['text']
+    return response_cls.model_validate_plain_text(response).model_dump()
 
 def f1(prec: float, rec: float, eps: float = 1e-12) -> float:
     return 2 * prec * rec / (prec + rec + eps)
@@ -75,3 +84,53 @@ def bert_score_f1(
     _, _, F1 = bert_scorer.score(candidates, references)
     if F1.item() < -1: breakpoint()
     return F1.mean().item()
+
+def fp_score(
+    model_final_answer: str,
+    presuppositions: List[str],
+    few_shot_data: List[Dict],
+    system_role: str = "system",
+    model_role: str = "assistant",
+    user_role: str = "user"
+) -> int:
+    """
+    Compute the percentage of false presuppositions being identified by the model final answer.
+    """
+    client = __CACHE__.get("genai_client", None)
+    if not client:
+        client = genai.Client(vertexai=True)
+        __CACHE__["genai_client"] = client
+    messages = CREPEFPScorePresuppositionExtractionTemplate(
+        model_final_answer=model_final_answer,
+        few_shot_data=few_shot_data,
+        system_role=system_role,
+        model_role=model_role,
+        user_role=user_role
+    ).generate()
+    response1 = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[{"role": message["role"], "parts": [{"text": message["content"]}]} for message in messages[1:]],
+        config=types.GenerateContentConfig(
+            temperature=0.0,
+            system_instruction=messages[0]['content']
+        )
+    )
+    presuppositions = _parse_response_gemini(CREPEPresuppositionExtractionResponse, response1)
+    messages = CREPEFPScoreEntailmentCountingTemplate(
+        answer_extracted_presuppositions=presuppositions['answer_extracted_presuppositions'],
+        presuppositions=presuppositions['presuppositions'],
+        few_shot_data=few_shot_data,
+        system_role=system_role,
+        model_role=model_role,
+        user_role=user_role
+    ).generate()
+    response2 = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[{"role": message["role"], "parts": [{"text": message["content"]}]} for message in messages[1:]],
+        config=types.GenerateContentConfig(
+            temperature=0.0,
+            system_instruction=messages[0]['content']
+        )
+    )
+    entailment_counting = _parse_response_gemini(CREPEEntailmentCountingResponse, response2)
+    return entailment_counting['count'] / len(presuppositions['presuppositions'])

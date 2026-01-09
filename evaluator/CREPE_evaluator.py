@@ -1,6 +1,6 @@
 from typing import List, Dict
 from .evaluator import Evaluator
-from .utils import rouge1_f1, rougeL_f1, bleurt_score, bert_score_f1
+from .utils import rouge1_f1, rougeL_f1, bleurt_score, bert_score_f1, fp_score
 from numpy import mean
 
 class CREPEPresuppositionExtractionEvaluator(Evaluator):
@@ -93,15 +93,22 @@ class CREPEPresuppositionExtractionEvaluator(Evaluator):
         
         return mean(bleurt_f1s) if len(bleurt_f1s) > 0 else 0.0
     
+    def evaluate_fp_score(self, system_role: str = "system", model_role: str = "assistant", user_role: str = "user") -> int:
+        return None
+    
 class CREPEFinalAnswerEvaluator(Evaluator):
     def __init__(
         self,
         comment: str,
         model_final_answer: str,
+        presuppositions: List[str],
+        few_shot_data: List[Dict],
         **kwargs
     ):
         self.comment = comment.strip()
         self.model_final_answer = model_final_answer.strip()
+        self.presuppositions = presuppositions
+        self.few_shot_data = few_shot_data
     
     def evaluate_rouge1_f1(self):
         return rouge1_f1(self.model_final_answer, [self.comment])
@@ -114,3 +121,14 @@ class CREPEFinalAnswerEvaluator(Evaluator):
     
     def evaluate_bert_score_f1(self):
         return bert_score_f1([self.model_final_answer], [self.comment])
+    
+    def evaluate_fp_score(self, system_role: str = "system", model_role: str = "assistant", user_role: str = "user") -> int:
+        if not self.presuppositions or len(self.presuppositions) == 0:
+            return 0
+        return fp_score(
+            model_final_answer=self.model_final_answer,
+            presuppositions=self.presuppositions,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )

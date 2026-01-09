@@ -269,24 +269,21 @@ class CREPEFinalAnswerOperator(CREPEOperator):
     def align_response(self, dp: Dict, **kwargs) -> Dict:
         return dp
 
-    def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
+    def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs) -> Dict:
         evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
-        if run_bert_score:
-            bert_score_f1 = evaluator.evaluate_bert_score_f1()
-        else:
-            bert_score_f1 = None
-        if run_bleurt:
-            bleurt_f1 = evaluator.evaluate_bleurt_f1()
-        else:
-            bleurt_f1 = None
         eval_dp['rouge1_f1'] = rouge1_f1
         eval_dp['rougeL_f1'] = rougeL_f1
-        if run_bleurt:
-            eval_dp['bleurt_f1'] = bleurt_f1
         if run_bert_score:
+            bert_score_f1 = evaluator.evaluate_bert_score_f1()
             eval_dp['bert_score_f1'] = bert_score_f1
+        if run_bleurt:
+            bleurt_f1 = evaluator.evaluate_bleurt_f1()
+            eval_dp['bleurt_f1'] = bleurt_f1
+        if run_fp_score:    
+            fp_score = evaluator.evaluate_fp_score()
+            eval_dp['fp_score'] = fp_score
         return eval_dp
     
     def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
@@ -332,24 +329,31 @@ class CREPEDirectQAOperator(CREPEOperator):
             for dp in sorted_data[:k]:
                 pretty_print(dp, f, score_key)
     
-    def evaluate(self, eval_dp: Dict, run_bleurt: bool = False, run_bert_score: bool = False, **kwargs) -> Dict:
-        evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'])
+    def evaluate(
+        self,
+        eval_dp: Dict,
+        run_bleurt: bool = False,
+        run_bert_score: bool = False,
+        run_fp_score: bool = False,
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ) -> Dict:
+        evaluator = CREPEFinalAnswerEvaluator(comment=eval_dp['comment'], model_final_answer=eval_dp[self.answer_key]['answer'], presuppositions=eval_dp['presuppositions'])
         rouge1_f1 = evaluator.evaluate_rouge1_f1()
         rougeL_f1 = evaluator.evaluate_rougeL_f1()
-        if run_bert_score:
-            bert_score_f1 = evaluator.evaluate_bert_score_f1()
-        else:
-            bert_score_f1 = None
-        if run_bleurt:
-            bleurt_f1 = evaluator.evaluate_bleurt_f1()
-        else:
-            bleurt_f1 = None
         eval_dp['rouge1_f1'] = rouge1_f1
         eval_dp['rougeL_f1'] = rougeL_f1
-        if run_bleurt:
-            eval_dp['bleurt_f1'] = bleurt_f1
         if run_bert_score:
+            bert_score_f1 = evaluator.evaluate_bert_score_f1()
             eval_dp['bert_score_f1'] = bert_score_f1
+        if run_bleurt:
+            bleurt_f1 = evaluator.evaluate_bleurt_f1()
+            eval_dp['bleurt_f1'] = bleurt_f1
+        if run_fp_score:
+            fp_score = evaluator.evaluate_fp_score(system_role=system_role, model_role=model_role, user_role=user_role)
+            eval_dp['fp_score'] = fp_score
         return eval_dp
     
     def align_response(self, dp: Dict, **kwargs) -> Dict:

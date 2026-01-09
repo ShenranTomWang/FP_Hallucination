@@ -256,3 +256,116 @@ class DirectQATemplate(Template):
             {"role": self.user_role, "content": self.question}
         ]
         return messages
+    
+class FPScorePresuppositionExtractionFewShotExample(Template):
+    answer: str
+    presuppositions: List[str]
+    user_role: str
+    model_role: str
+    
+    def __init__(self, answer: str, presuppositions: List[str], user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.answer = answer
+        self.presuppositions = presuppositions
+        self.user_role = user_role
+        self.model_role = model_role
+
+    def generate(self, **kwargs) -> List[Dict]:
+        content = "\n".join(self.presuppositions)
+        return [
+            {
+                "role": self.user_role,
+                "content": self.answer
+            },
+            {
+                "role": self.model_role,
+                "content": content
+            }
+        ]
+
+class FPScorePresuppositionExtractionTemplate(Template):
+    def __init__(self, model_final_answer: str, few_shot_data: List[str], system_role: str = "system", user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.model_final_answer = model_final_answer
+        self.system_role = system_role
+        self.user_role = user_role
+        self.model_role = model_role
+        self.few_shot_data = []
+        for dp in few_shot_data:
+            self.few_shot_data += FPScorePresuppositionExtractionFewShotExample(**dp, user_role=self.user_role, model_role=self.model_role).generate()
+
+    def generate(self, **kwargs) -> List[Dict]:
+        return [
+            {
+                "role": self.system_role,
+                "content": f"""
+                    You are a helpful assistant that does the following task:
+                    You will be given a piece of text that addresses some false assumptions.
+                    Your task is to extract the presuppositions being addressed in the text.
+                    Format your response as a list of presuppositions, separated by newlines.
+                """
+            },
+            *self.few_shot_data,
+            {
+                "role": self.user_role,
+                "content": self.model_final_answer
+            }
+        ]
+
+class FPScoreEntailmentCountingFewShotExample(Template):
+    presuppositions: List[str]
+    user_role: str
+    model_role: str
+    
+    def __init__(self, presuppositions: List[str], user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.presuppositions = presuppositions
+        self.user_role = user_role
+        self.model_role = model_role
+
+    def generate(self, **kwargs) -> List[Dict]:
+        content = len(self.presuppositions)
+        return [
+            {
+                "role": self.user_role,
+                "content": f"""
+                    Presuppositions from the question: {self.presuppositions}
+                    Presuppositions from model final answer: {self.presuppositions}
+                """
+            },
+            {
+                "role": self.model_role,
+                "content": content
+            }
+        ]
+
+class FPScoreEntailmentCountingTemplate(Template):
+    def __init__(self, presuppositions: List[str], answer_extracted_presuppositions: List[str], few_shot_data: List[str], system_role: str = "system", user_role: str = "user", model_role: str = "assistant", **kwargs):
+        self.presuppositions = presuppositions
+        self.answer_extracted_presuppositions = answer_extracted_presuppositions
+        self.system_role = system_role
+        self.user_role = user_role
+        self.model_role = model_role
+        self.few_shot_data = []
+        for dp in few_shot_data:
+            self.few_shot_data += FPScoreEntailmentCountingFewShotExample(**dp, user_role=self.user_role, model_role=self.model_role).generate()
+
+    def generate(self, **kwargs) -> List[Dict]:
+        return [
+            {
+                "role": self.system_role,
+                "content": f"""
+                    You are a helpful assistant that does the following task:
+                    You will be given two lists of claims:
+                    1. A list of presuppositions extracted from a question.
+                    2. A list of presuppositions addressed in the model final answer.
+                    Your task is to count how many presuppositions from the first list are being addressed in the second list.
+                    Format your response as an integer indicating the number of presuppositions being addressed. Do not return any other text.
+                """
+            },
+            *self.few_shot_data,
+            {
+                "role": self.user_role,
+                "content": f"""
+                    Presuppositions from the question: {self.presuppositions}
+                    Presuppositions from model final answer: {self.answer_extracted_presuppositions}
+                """
+            }
+        ]

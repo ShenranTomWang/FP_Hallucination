@@ -1,4 +1,4 @@
-from .template import PresuppositionExtractionTemplate, FeedbackActionTemplate, FinalAnswerTemplate, DirectQATemplate
+from .template import PresuppositionExtractionTemplate, FeedbackActionTemplate, FinalAnswerTemplate, DirectQATemplate, FPScorePresuppositionExtractionTemplate, FPScoreEntailmentCountingTemplate
 from typing import List, Dict
         
 class CREPEPresuppositionExtractionTemplate(PresuppositionExtractionTemplate):
@@ -35,7 +35,7 @@ class CREPEFeedbackActionTemplate(FeedbackActionTemplate):
             {
                 **dp,
                 "presuppositions": dp["presuppositions"],
-                "is_normal": dp["labels"][0] == "normal"
+                "is_normal":  "false presuppositions" not in dp["labels"]
             } for dp in few_shot_data
         ]
         model_detected_presuppositions = model_detected_presuppositions["presuppositions"]
@@ -64,7 +64,7 @@ class CREPEFinalAnswerTemplate(FinalAnswerTemplate):
                 **dp,
                 "answer": dp["comment"],
                 "presuppositions": dp["presuppositions"],
-                "is_normal": dp["labels"][0] == "normal"
+                "is_normal": "false presuppositions" not in dp["labels"]
             } for dp in few_shot_data
         ]
         model_feedback_action = model_feedback_action["feedback_action"]
@@ -90,6 +90,48 @@ class CREPEDirectQATemplate(DirectQATemplate):
         few_shot_data = [{**dp, "answer": dp["comment"]} for dp in few_shot_data]
         super().__init__(
             question=question,
+            few_shot_data=few_shot_data,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )
+        
+class CREPEFPScorePresuppositionExtractionTemplate(FPScorePresuppositionExtractionTemplate):
+    def __init__(
+        self,
+        model_final_answer: Dict[str, str],
+        few_shot_data: List[Dict],
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ):
+        few_shot_data = [{**dp, "answer": dp["comment"]} for dp in few_shot_data if "false presuppositions" in dp["labels"]]
+        model_final_answer = model_final_answer["answer"]
+        super().__init__(
+            model_final_answer=model_final_answer,
+            few_shot_data=few_shot_data,
+            system_role=system_role,
+            model_role=model_role,
+            user_role=user_role
+        )
+        
+class CREPEFPScoreEntailmentCountingTemplate(FPScoreEntailmentCountingTemplate):
+    def __init__(
+        self,
+        answer_extracted_presuppositions: Dict[str, str],
+        presuppositions: List[str],
+        few_shot_data: List[Dict],
+        system_role: str = "system",
+        model_role: str = "assistant",
+        user_role: str = "user",
+        **kwargs
+    ):
+        few_shot_data = [dp for dp in few_shot_data if "false presuppositions" in dp["labels"]]
+        answer_extracted_presuppositions = answer_extracted_presuppositions["presuppositions"]
+        super().__init__(
+            answer_extracted_presuppositions=answer_extracted_presuppositions,
+            presuppositions=presuppositions,
             few_shot_data=few_shot_data,
             system_role=system_role,
             model_role=model_role,

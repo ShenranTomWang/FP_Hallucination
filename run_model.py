@@ -4,7 +4,6 @@ import torch
 import openai
 from tqdm import tqdm
 import data_operator
-import numpy as np
 from google import genai
 from google.genai import types
 
