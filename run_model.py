@@ -24,6 +24,9 @@ def main(args):
             args.out_file = f"{fnames[0]}_evaluated.{fnames[1]}"
         run_evaluate(args, operator)
         return
+    elif args.command == 'print_results':
+        run_print_results(args, operator)
+        return
     elif args.command == 'print_examples':
         run_print_examples(args)
         return
@@ -75,6 +78,21 @@ def run_evaluate(args, operator: data_operator.DataOperator):
             run_bleurt=args.run_bleurt,
             run_bert_score=args.run_bert_score,
             run_fp_score=args.run_fp_score
+        )
+
+def run_print_results(args, operator: data_operator.DataOperator):
+    with open(args.file, 'r') as f:
+        data = [json.loads(line.strip()) for line in f]
+    operator.print_eval_result(data=data, run_bleurt=args.show_bleurt, run_bert_score=args.show_bert_score, run_fp_score=args.show_fp_score)
+    if args.show_top_bottom_k > 0:
+        operator.save_top_bottom_k(
+            data=data,
+            k=args.show_top_bottom_k,
+            out_dir=os.path.dirname(args.file),
+            use_aligned='recall',
+            run_bleurt=args.show_bleurt,
+            run_bert_score=args.show_bert_score,
+            run_fp_score=args.show_fp_score
         )
 
 def run_align_responses(args, operator: data_operator.DataOperator):
@@ -334,6 +352,14 @@ if __name__ == '__main__':
     evaluate_parser.add_argument('--run_bert_score', action='store_true', help='Whether to run BERTScore evaluation (may be slow)')
     evaluate_parser.add_argument('--run_fp_score', action='store_true', help='Whether to run FP Score evaluation (may be slow, calling Gemini API)')
     evaluate_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
+    
+    print_results_parser = model_subparsers.add_parser('print_results', help='Print evaluation results for model outputs')
+    print_results_parser.add_argument('--file', type=str, required=True, help='File containing model outputs to evaluate')
+    print_results_parser.add_argument('--operator', type=str, required=True, help='Operator class to use for evaluation')
+    print_results_parser.add_argument('--show_bleurt', action='store_true', help='Whether to show BLEURT evaluation (requires BLEURT scores in data)')
+    print_results_parser.add_argument('--show_bert_score', action='store_true', help='Whether to show BERTScore evaluation (requires BERTScore scores in data)')
+    print_results_parser.add_argument('--show_fp_score', action='store_true', help='Whether to show FP Score evaluation (requires FP Score scores in data)')
+    print_results_parser.add_argument('--show_top_bottom_k', type=int, default=0, help='Show top and bottom k examples based on evaluated scores')
     
     print_parser = model_subparsers.add_parser('print_examples', help='Print examples from dataset')
     print_parser.add_argument('--dataset', type=str, required=True, help='Dataset name to use for printing examples')
