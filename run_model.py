@@ -21,7 +21,7 @@ def main(args):
     if args.command == 'evaluate':
         if args.out_file is None:
             fnames = args.file.split('.')
-            args.out_file = f"{fnames[0]}_evaluated.{fnames[1]}"
+            args.out_file = f"{'.'.join(fnames[:-1])}_evaluated.{fnames[-1]}"
         run_evaluate(args, operator)
         return
     elif args.command == 'print_results':
