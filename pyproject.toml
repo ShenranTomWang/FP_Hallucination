@@ -44,6 +44,7 @@ dependencies = [
     "llvmlite>=0.45.1",
     "markupsafe>=3.0.3",
     "matplotlib>=3.10.7",
+    "minicheck",
     "mpmath>=1.3.0",
     "multidict>=6.7.0",
     "multiprocess>=0.70.18",
@@ -102,3 +103,6 @@ dependencies = [
     "xxhash>=3.6.0",
     "yarl>=1.22.0",
 ]
+
+[tool.uv.sources]
+minicheck = { git = "https://github.com/Liyan06/MiniCheck.git", rev = "main" }

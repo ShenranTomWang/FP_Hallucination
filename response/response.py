@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 class Response(BaseModel):
     @classmethod

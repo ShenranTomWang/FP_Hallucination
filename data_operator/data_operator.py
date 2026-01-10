@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 from response import Response
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
 import torch
 from pydantic import BaseModel
 
@@ -9,6 +9,23 @@ class DataOperator(ABC):
     action_name: str
     response_cls: Response
     exclude_domains: List[str] = []
+    RAG_encoder: AutoModel = None
+    RAG_tokenizer: AutoTokenizer = None
+    
+    @torch.inference_mode()
+    def _RAG_compute_similarity(self, query: str, passages: List[str], **kwargs) -> List[float]:
+        if not self.RAG_encoder or not self.RAG_tokenizer:
+            self.RAG_encoder = AutoModel.from_pretrained('BAAI/bge-large-zh-v1.5')
+            self.RAG_encoder.eval()
+            self.RAG_tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-large-zh-v1.5')
+        query_tokenized = self.RAG_tokenizer(query, return_tensors='pt', truncation=True, padding=True)
+        passage_tokenized = self.RAG_tokenizer(passages, return_tensors='pt', truncation=True, padding=True)
+        # TODO: finalize the design choice
+        pass
+    
+    def RAG_retrieve(self, dp: Dict[str, any], **kwargs) -> List[str]:
+        # TODO: finalize the design choice
+        pass
     
     @staticmethod
     @abstractmethod

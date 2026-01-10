@@ -35,6 +35,10 @@ class CREPEOperator(DataOperator):
     answer_key: str
     action_name: str
     
+    def RAG_retrieve(self, dp: Dict[str, any], **kwargs):
+        # TODO: finalize the design choice
+        return dp['passages']
+    
     def __init__(self):
         self.exclude_domains = ['reddit.com']
         

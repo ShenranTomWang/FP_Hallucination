@@ -19,6 +19,17 @@ python run_model.py \
         --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
         --dataset_path /ubc/cs/home/s/shenranw/scratch/datasets/CREPE/dev.jsonl
 
+python ./run_minicheck.py \
+    --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction.jsonl \
+    --operator CREPEMiniCheckOperator
+
+python run_model.py \
+    gemini \
+        --model gemini-2.5-flash \
+        --operator CREPEMiniCheckFinalAnswerOperator \
+        --out_dir /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out \
+        --dataset_path /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Presupposition_Extraction_minichecked.jsonl
+
 python run_model.py \
     gemini \
         --model gemini-2.5-flash \

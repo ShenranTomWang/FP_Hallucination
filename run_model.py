@@ -297,6 +297,7 @@ if __name__ == '__main__':
     transformers_parser.add_argument('--dtype', type=str, default='float32', choices=['float32', 'float16', 'bfloat16'], help='Data type for model parameters')
     transformers_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     transformers_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
+    transformers_parser.add_argument('--RAG_retrieval', type=int, default=0, help='Number of RAG retrieved passages to use, set to 0 to disable RAG, set to None to use all passages')
 
     openai_parser = model_subparsers.add_parser('openai', help='Arguments for OpenAI models')
     openai_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
@@ -309,6 +310,7 @@ if __name__ == '__main__':
     openai_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     openai_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     openai_parser.add_argument('--use_web_search', action='store_true', help='Whether to use web search tool in Gemini model calls')
+    openai_parser.add_argument('--RAG_retrieval', type=int, default=0, help='Number of RAG retrieved passages to use, set to 0 to disable RAG, set to None to use all passages')
     
     gemini_parser = model_subparsers.add_parser('gemini', help='Arguments for Gemini models')
     gemini_parser.add_argument('--model', type=str, required=True, help='Gemini model name (e.g., gemini-2.5-flash)')
@@ -321,6 +323,7 @@ if __name__ == '__main__':
     gemini_parser.add_argument('--out_dir', type=str, default='out', help='Output directory to save the curated dataset')
     gemini_parser.add_argument('--out_file', type=str, default='curated_dataset_{}.jsonl', help='Output file to save the curated dataset')
     gemini_parser.add_argument('--use_web_search', action='store_true', help='Whether to use web search tool in Gemini model calls')
+    gemini_parser.add_argument('--RAG_retrieval', type=int, default=0, help='Number of RAG retrieved passages to use, set to 0 to disable RAG, set to None to use all passages')
     
     openai_check_parser = model_subparsers.add_parser('openai_check', help='Check status of OpenAI batched job')
     openai_check_parser.add_argument('--model', type=str, required=True, help='OpenAI model name (e.g., gpt-5)')
