@@ -66,6 +66,14 @@ python run_model.py \
 
 python run_model.py \
     evaluate \
+        --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_MiniCheck_Final_Answer.jsonl \
+        --operator CREPEFinalAnswerOperator \
+        --show_top_bottom_k 20 \
+        --run_bert_score \
+        --run_fp_score
+
+python run_model.py \
+    evaluate \
         --file /ubc/cs/home/s/shenranw/scratch/FP_Hallucination/out/curated_dataset_gemini-2.5-flash_CREPE_Final_Answer.jsonl \
         --operator CREPEFinalAnswerOperator \
         --show_top_bottom_k 20 \

@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
-from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate, CREPEDirectQATemplate
+from data_gen.template import CREPEPresuppositionExtractionTemplate, CREPEFeedbackActionTemplate, CREPEFinalAnswerTemplate, CREPEDirectQATemplate, CREPEMiniCheckFinalAnswerTemplate
 from evaluator import CREPEPresuppositionExtractionEvaluator, CREPEFinalAnswerEvaluator
 from .data_operator import DataOperator
 import random, os
-from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse
+from response import CREPEPresuppositionExtractionResponse, CREPEFeedbackActionResponse, CREPEFinalAnswerResponse, Response
 from pydantic import BaseModel
 from evaluator.utils import bert_score_f1
 from typing import Dict, List
@@ -33,7 +33,10 @@ def _avg_report(data: List[Dict], measure: str = '', run_bleurt: bool = False, r
 
 class CREPEOperator(DataOperator):
     answer_key: str
-    action_name: str
+    
+    def __init__(self, action_name: str, response_cls: Response, answer_key: str, exclude_domains: List[str] = ["reddit.com"]):
+        super().__init__(action_name, response_cls, exclude_domains)
+        self.answer_key = answer_key
     
     def RAG_retrieve(self, dp: Dict[str, any], **kwargs):
         # TODO: finalize the design choice
@@ -85,11 +88,8 @@ class CREPEOperator(DataOperator):
         return dataset
 
 class CREPEPresuppositionExtractionOperator(CREPEOperator):
-    def __init__(self):
-        self.action_name = "CREPE_Presupposition_Extraction"
-        self.response_cls = CREPEPresuppositionExtractionResponse
-        self.answer_key = "model_detected_presuppositions"
-        super().__init__()
+    def __init__(self, action_name: str = "CREPE_Presupposition_Extraction", response_cls: Response = CREPEPresuppositionExtractionResponse, answer_key: str = "model_detected_presuppositions"):
+        super().__init__(action_name=action_name, response_cls=response_cls, answer_key=answer_key)
         
     def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, **kwargs):
         _avg_report(data=data, measure='precision', run_bleurt=run_bleurt, run_bert_score=run_bert_score)
@@ -210,11 +210,8 @@ class CREPEPresuppositionExtractionOperator(CREPEOperator):
         return template.generate()
 
 class CREPEFeedbackActionOperator(CREPEOperator):
-    def __init__(self):
-        self.action_name = "CREPE_Feedback_Action"
-        self.response_cls = CREPEFeedbackActionResponse
-        self.answer_key = "model_feedback_action"
-        super().__init__()
+    def __init__(self, action_name: str = "CREPE_Feedback_Action", response_cls: Response = CREPEFeedbackActionResponse, answer_key: str = "model_feedback_action"):
+        super().__init__(action_name=action_name, response_cls=response_cls, answer_key=answer_key)
     
     @staticmethod
     def print_eval_result(data: List[Dict], **kwargs):
@@ -234,11 +231,8 @@ class CREPEFeedbackActionOperator(CREPEOperator):
         return template.generate()
     
 class CREPEFinalAnswerOperator(CREPEOperator):
-    def __init__(self):
-        self.action_name = "CREPE_Final_Answer"
-        self.response_cls = CREPEFinalAnswerResponse
-        self.answer_key = "model_final_answer"
-        super().__init__()
+    def __init__(self, action_name: str = "CREPE_Final_Answer", response_cls: Response = CREPEFinalAnswerResponse, answer_key: str = "model_final_answer"):
+        super().__init__(action_name=action_name, response_cls=response_cls, answer_key=answer_key)
         
     @staticmethod
     def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs):
@@ -304,13 +298,18 @@ class CREPEFinalAnswerOperator(CREPEOperator):
     def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
         template = CREPEFinalAnswerTemplate(**raw_dp, **kwargs)
         return template.generate()
+
+class CREPEMiniCheckFinalAnswerOperator(CREPEFinalAnswerOperator):
+    def __init__(self, action_name: str = "CREPE_MiniCheck_Final_Answer", response_cls: Response = CREPEFinalAnswerResponse, answer_key: str = "model_final_answer"):
+        super().__init__(action_name=action_name, response_cls=response_cls, answer_key=answer_key)
+
+    def prepare_message(self, raw_dp: Dict, **kwargs) -> str:
+        template = CREPEMiniCheckFinalAnswerTemplate(**raw_dp, **kwargs)
+        return template.generate()
     
 class CREPEDirectQAOperator(CREPEOperator):
-    def __init__(self):
-        self.action_name = "CREPE_Direct_QA"
-        self.response_cls = CREPEFinalAnswerResponse
-        self.answer_key = "model_answer"
-        super().__init__()
+    def __init__(self, action_name: str = "CREPE_Direct_QA", response_cls: Response = CREPEFinalAnswerResponse, answer_key: str = "model_answer"):
+        super().__init__(action_name=action_name, response_cls=response_cls, answer_key=answer_key)
     
     @staticmethod
     def print_eval_result(data: List[Dict], run_bleurt: bool = False, run_bert_score: bool = False, run_fp_score: bool = False, **kwargs):

@@ -12,6 +12,11 @@ class DataOperator(ABC):
     RAG_encoder: AutoModel = None
     RAG_tokenizer: AutoTokenizer = None
     
+    def __init__(self, action_name: str, response_cls: Response, exclude_domains: List[str] = []):
+        self.action_name = action_name
+        self.response_cls = response_cls
+        self.exclude_domains = exclude_domains
+    
     @torch.inference_mode()
     def _RAG_compute_similarity(self, query: str, passages: List[str], **kwargs) -> List[float]:
         if not self.RAG_encoder or not self.RAG_tokenizer:
